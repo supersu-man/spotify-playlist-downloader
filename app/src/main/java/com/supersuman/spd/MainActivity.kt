@@ -37,8 +37,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spotifylinkedittext : EditText
     private lateinit var songTitle : TextView
     private lateinit var songDownloadProgress : TextView
-    private lateinit var downloadButton : Button
     private lateinit var progressBar : ProgressBar
+    private lateinit var downloadButton : Button
+    private lateinit var totalDownloadProgress : TextView
+    private lateinit var errorTextView : TextView
+
+
 
     private lateinit var completedArray : MutableList<String>
 
@@ -53,6 +57,7 @@ class MainActivity : AppCompatActivity() {
 
         setupSpotify()
        downloadButton.setOnClickListener {
+           errorTextView.text = ""
            closeKeyboard()
            if(!checkForPermissions()){
                Snackbar.make(parent, "Please grant the permission", Snackbar.LENGTH_SHORT).show()
@@ -64,15 +69,18 @@ class MainActivity : AppCompatActivity() {
                thread {
                    createDirectory(subfolderText.text.toString())
                    val list = getPlaylistItems(spotifylinkedittext.text.toString())
-                   for (i in list){
-                       val videoLink = getVideoLink(i)
+                   for (i in list.indices){
+                       val videoLink = getVideoLink(list[i])
                        val downloadlink = getDownloadLink(videoLink)
                        title = renameTitle()
                        startDownload(downloadlink)
+                       runOnUiThread {
+                           totalDownloadProgress.text = "${i+1}/${list.size}"
+                       }
                    }
                }
            }else{
-            Snackbar.make(parent, "What the java are you looking at", Snackbar.LENGTH_SHORT).show()
+               Snackbar.make(parent, "What the java are you looking at", Snackbar.LENGTH_SHORT).show()
             }
         }
 
@@ -111,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initviews(){
+    private fun initviews() {
         spotifylinkedittext  = findViewById(R.id.spotifylinkedittext)
         downloadButton = findViewById(R.id.downloadButton)
         permissionButton = findViewById(R.id.permissionButton)
@@ -120,9 +128,11 @@ class MainActivity : AppCompatActivity() {
         songDownloadProgress = findViewById(R.id.songDownloadProgress)
         completedArray = ArrayList()
         subfolderText = findViewById(R.id.subfolderName)
+        totalDownloadProgress = findViewById(R.id.totalProgress)
+        errorTextView = findViewById(R.id.errorTextView)
     }
 
-    private fun setupSpotify(){
+    private fun setupSpotify() {
         thread {
             try {
                 spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId)).setClientSecret(
@@ -133,7 +143,9 @@ class MainActivity : AppCompatActivity() {
                 spotifyApi.accessToken = clientCredentials.accessToken
                 spotifyHasSetup = true
             }catch (e:Exception){
-                println(e)
+                runOnUiThread {
+                    errorTextView.text = e.toString()
+                }
             }
         }
     }
@@ -159,7 +171,9 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             }catch (e:Exception){
-                println(e)
+                runOnUiThread {
+                    errorTextView.text = e.toString()
+                }
             }
         }.join()
         println("Gathered playlist info")
@@ -186,7 +200,9 @@ class MainActivity : AppCompatActivity() {
                 )[0]
                 videoLink = "https://youtu.be/$videoID"
             }catch (e:Exception){
-                println(e)
+                runOnUiThread {
+                    errorTextView.text = e.toString()
+                }
             }
         }.join()
         return videoLink
@@ -206,7 +222,7 @@ class MainActivity : AppCompatActivity() {
                 title = s1.text.split("title\":\"")[1].split("\"")[0]
                 runOnUiThread {
                     songTitle.text = title
-                    songDownloadProgress.text = "0"
+                    songDownloadProgress.text = "0%"
                     progressBar.progress = 0
                 }
                 val videoID = s1.text.split("vid\":\"")[1].split("\"")[0]
@@ -220,7 +236,9 @@ class MainActivity : AppCompatActivity() {
                 val dlink = s2.text.split("dlink\":\"")[1].split("\"")[0].replace("\\", "")
                 downloadlink = dlink
             }catch (e: Exception){
-                println(e)
+                runOnUiThread {
+                    errorTextView.text = e.toString()
+                }
             }
         }.join()
         return downloadlink
@@ -265,7 +283,9 @@ class MainActivity : AppCompatActivity() {
                 output.close()
                 input.close()
             }catch (e: Exception) {
-                println(e)
+                runOnUiThread {
+                    errorTextView.text = e.toString()
+                }
             }
         }.join()
     }
