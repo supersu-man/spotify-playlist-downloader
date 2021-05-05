@@ -27,7 +27,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:autofillHints=""
         android:inputType="textUri"
         android:textSize="20sp"
         tools:ignore="LabelFor" />
@@ -44,7 +43,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:autofillHints=""
         android:inputType="textUri"
         android:textSize="20sp"
         tools:ignore="LabelFor" />
