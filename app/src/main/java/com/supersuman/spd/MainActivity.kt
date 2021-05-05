@@ -32,39 +32,50 @@ class MainActivity : AppCompatActivity() {
     private var title = ""
     private lateinit var spotifyApi : SpotifyApi
 
-    private lateinit var editText : EditText
-    private lateinit var downloadButton : Button
     private lateinit var permissionButton : Button
-    private lateinit var progressBar : ProgressBar
+    private lateinit var subfolderText : EditText
+    private lateinit var spotifylinkedittext : EditText
     private lateinit var songTitle : TextView
     private lateinit var songDownloadProgress : TextView
+    private lateinit var downloadButton : Button
+    private lateinit var progressBar : ProgressBar
+
     private lateinit var completedArray : MutableList<String>
-    private lateinit var subfolderText : EditText
+
+    private var spotifyHasSetup = false
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
+        val parent : LinearLayout = findViewById(R.id.parentview)
         initviews()
-        createDirectory("something")
+
+        setupSpotify()
        downloadButton.setOnClickListener {
            closeKeyboard()
-            if (checkForPermissions()){
-                thread {
-                    createDirectory("Playlist1")
-                    val videoLink = getVideoLink("Chitti")
-                    val downloadlink = getDownloadLink(videoLink)
-                    renameTitle()
-                    startDownload(downloadlink)
-                }
-            }else{
-                val parent : LinearLayout = findViewById(R.id.parentview)
-                Snackbar.make(parent, "Please grant the permission", Snackbar.LENGTH_SHORT).show()
+           if(!checkForPermissions()){
+               Snackbar.make(parent, "Please grant the permission", Snackbar.LENGTH_SHORT).show()
+           }else if(subfolderText.text.isEmpty()){
+               Snackbar.make(parent, "Sub Folder name can't be empty", Snackbar.LENGTH_SHORT).show()
+           }else if(spotifylinkedittext.text.isEmpty()){
+               Snackbar.make(parent, "No playlist link provided", Snackbar.LENGTH_SHORT).show()
+           }else if (checkForPermissions() && spotifyHasSetup){
+               thread {
+                   createDirectory(subfolderText.text.toString())
+                   val list = getPlaylistItems(spotifylinkedittext.text.toString())
+                   for (i in list){
+                       val videoLink = getVideoLink(i)
+                       val downloadlink = getDownloadLink(videoLink)
+                       title = renameTitle()
+                       startDownload(downloadlink)
+                   }
+               }
+           }else{
+            Snackbar.make(parent, "What the java are you looking at", Snackbar.LENGTH_SHORT).show()
             }
         }
 
-        setupSpotify()
 
         permissionButton.setOnClickListener {
             closeKeyboard()
@@ -101,7 +112,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initviews(){
-        editText  = findViewById(R.id.spotifylinkedittext)
+        spotifylinkedittext  = findViewById(R.id.spotifylinkedittext)
         downloadButton = findViewById(R.id.downloadButton)
         permissionButton = findViewById(R.id.permissionButton)
         progressBar = findViewById(R.id.progressBar)
@@ -112,19 +123,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupSpotify(){
-        try {
-            thread {
+        thread {
+            try {
                 spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId)).setClientSecret(
-                    getString(
-                        R.string.clientSecret
-                    )
+                    getString(R.string.clientSecret)
                 ).build()
                 val clientCredentialsRequest = spotifyApi.clientCredentials().build()
                 val clientCredentials = clientCredentialsRequest.execute()
                 spotifyApi.accessToken = clientCredentials.accessToken
-            }.join()
-        }catch (e: Exception){
-            println(e)
+                spotifyHasSetup = true
+            }catch (e:Exception){
+                println(e)
+            }
         }
     }
 
@@ -132,7 +142,8 @@ class MainActivity : AppCompatActivity() {
         val arrayList: MutableList<String> = ArrayList()
         thread {
             try {
-                val playlistId= link.split("playlist/").toTypedArray()[1].split("\\?").toTypedArray()[0]
+                val playlistId= link.split("playlist/")[1].split("?")[0]
+                println(playlistId)
                 val getPlaylistsItemsRequests = spotifyApi.getPlaylistsItems(playlistId).build()
                 var playlistTrackPaging: Paging<PlaylistTrack>?
                 playlistTrackPaging = getPlaylistsItemsRequests.execute()
@@ -145,13 +156,13 @@ class MainActivity : AppCompatActivity() {
                     }
                     for (j in playlistTrackPaging!!.items.indices) {
                         arrayList.add(playlistTrackPaging.items[j].track.name)
-                        println(playlistTrackPaging.items[j].track.name)
                     }
                 }
             }catch (e:Exception){
                 println(e)
             }
         }.join()
+        println("Gathered playlist info")
         return arrayList
     }
 
@@ -160,9 +171,9 @@ class MainActivity : AppCompatActivity() {
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
             "SPD/$subfoldername"
         )
-        newFolder.mkdir()
         newFolder.mkdirs()
         folderpath = newFolder
+
     }
 
     private fun getVideoLink(searchQuery: String): String {
@@ -195,6 +206,8 @@ class MainActivity : AppCompatActivity() {
                 title = s1.text.split("title\":\"")[1].split("\"")[0]
                 runOnUiThread {
                     songTitle.text = title
+                    songDownloadProgress.text = "0"
+                    progressBar.progress = 0
                 }
                 val videoID = s1.text.split("vid\":\"")[1].split("\"")[0]
                 val s2 = khttp.post(
@@ -213,7 +226,7 @@ class MainActivity : AppCompatActivity() {
         return downloadlink
     }
 
-    private fun renameTitle(){
+    private fun renameTitle(): String {
         val allowedChar = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz{}[]()!@#$%^&-_=+;' "
         var newtitle = ""
         for (i in title){
@@ -221,7 +234,7 @@ class MainActivity : AppCompatActivity() {
                 newtitle+=i
             }
         }
-        title=newtitle
+        return newtitle
     }
 
     private fun startDownload(downloadlink: String){
@@ -239,14 +252,15 @@ class MainActivity : AppCompatActivity() {
                 while (input.read(data).also { count = it } != -1) {
                     total += count.toLong()
                     val downloadedprogress = "" + (total * 100 / lengthOfFile).toInt()
-                    println(downloadedprogress)
                     output.write(data, 0, count)
+                    if (downloadedprogress == "100"){
+                        println("$title Download Complete")
+                    }
                     runOnUiThread {
                         progressBar.progress = downloadedprogress.toInt()
                         songDownloadProgress.text = "$downloadedprogress%"
                     }
                 }
-                println("Download Complete")
                 output.flush()
                 output.close()
                 input.close()
