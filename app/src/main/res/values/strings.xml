@@ -1,5 +1,0 @@
-<resources>
-    <string name="app_name">Spotify Playlist Downloader</string>
-    <string name="clientId"></string>
-    <string name="clientSecret"></string>
-</resources>
