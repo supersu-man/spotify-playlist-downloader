@@ -5,7 +5,7 @@
     "kind": "Directory"
   },
   "applicationId": "com.supersuman.spd",
-  "variantName": "processReleaseResources",
+  "variantName": "release",
   "elements": [
     {
       "type": "SINGLE",
