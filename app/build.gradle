@@ -12,7 +12,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "com.supersuman.gitamite"
+        applicationId "com.supersuman.spd"
         minSdkVersion 21
         targetSdkVersion 30
         versionCode 1
