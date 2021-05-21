@@ -1,5 +1,5 @@
-app/src/main/res/values/strings.xml
-app/src/main/res/values/strings.xml~
+app/src/main/res/values/keys.xml
+app/src/main/res/values/keys.xml~
 
 # Built application files
 *.apk
@@ -68,4 +68,4 @@ fastlane/Preview.html
 fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
-app/src/main/res/values/keys.xml
+
