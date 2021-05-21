@@ -5,6 +5,8 @@ This app uses 2 simple apis. Spotify web api and khttp.
 I dont want to make this app too complicated and keep it very simple.
 Few more features might be added in future.
 
+# Downloads
+- You can download the latest apk from [here](https://github.com/supersu-man/SpotifyPlaylistDownloader/releases).
 # Features
 - Downloads music from Spotify playlist link
 
