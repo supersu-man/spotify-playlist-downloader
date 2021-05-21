@@ -1,6 +1,7 @@
 package com.supersuman.spd
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -42,8 +43,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var totalDownloadProgress : TextView
     private lateinit var errorTextView : TextView
 
-
-
     private lateinit var completedArray : MutableList<String>
 
     private var spotifyHasSetup = false
@@ -52,42 +51,53 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        initviews()
 
         setupSpotify()
-       downloadButton.setOnClickListener {
-           errorTextView.text = ""
-           closeKeyboard()
-           if(!checkForPermissions()){
-               snackbarMessage("Please grant the permission")
-           }else if(subfolderText.text.isEmpty()){
-               snackbarMessage("Sub Folder name can't be empty")
-           }else if(spotifylinkedittext.text.isEmpty()){
-               snackbarMessage("No playlist link provided")
-           }else if (checkForPermissions() && spotifyHasSetup){
-               thread {
-                   createDirectory(subfolderText.text.toString())
-                   val list = getPlaylistItems(spotifylinkedittext.text.toString())
-                   for (i in list.indices){
-                       val videoLink = getVideoLink(list[i])
-                       val downloadlink = getDownloadLink(videoLink)
-                       title = renameTitle()
-                       startDownload(downloadlink)
-                       runOnUiThread {
-                           totalDownloadProgress.text = "${i+1}/${list.size}"
-                       }
-                   }
-               }
-           }else{
-               snackbarMessage("What the java are you looking at")
-            }
+        initviews()
+        initListeners()
+        modifyViews()
+
+
+    }
+
+    private fun modifyViews() {
+        if(checkForPermissions()){
+            permissionButton.visibility = View.GONE
         }
 
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun initListeners() {
+        downloadButton.setOnClickListener {
+            errorTextView.text = ""
+            closeKeyboard()
+            if(!checkForPermissions()){
+                snackbarMessage("Please grant the permission")
+            }else if(subfolderText.text.isEmpty() || spotifylinkedittext.text.isEmpty()){
+                snackbarMessage("Empty field")
+            }else if (checkForPermissions() && spotifyHasSetup){
+                thread {
+                    createDirectory(subfolderText.text.toString())
+                    val list = getPlaylistItems(spotifylinkedittext.text.toString())
+                    for (i in list.indices){
+                        val videoLink = getVideoLink(list[i])
+                        val downloadlink = getDownloadLink(videoLink)
+                        title = renameTitle()
+                        startDownload(downloadlink)
+                        runOnUiThread {
+                            totalDownloadProgress.text = "${i+1}/${list.size}"
+                        }
+                    }
+                }
+            }else{
+                snackbarMessage("What the java are you looking at")
+            }
+        }
         permissionButton.setOnClickListener {
             closeKeyboard()
             askForPermissions()
         }
-
     }
 
     private fun snackbarMessage(string:String){
@@ -262,6 +272,7 @@ class MainActivity : AppCompatActivity() {
         return newtitle
     }
 
+    @SuppressLint("SetTextI18n")
     private fun startDownload(downloadlink: String){
         thread {
             try {
