@@ -1,8 +1,9 @@
-# SpotifyPlaylistDownloader
-A very simple app which takes a spotify playlist link, gets all the music and artists names and then searches on YouTube Music and downloads them as mp3 files to 'internalstorage/Download/spd'.
-This app technically uses YouTube to find the music but searches in a way that results are audio versions (the ones uploaded to YouTube music) and not video music.
-This app uses 2 simple apis. Spotify web api and khttp.
-I dont want to make this app too complicated and keep it very simple.
+![](githubdocs/logo.png)
+
+# Introduction
+SpotifyPlaylistDownloader is a very simple app which takes a spotify playlist link and downloads them as mp3 files to 'internalstorage/Download/spd'.
+This app technically uses YouTube to find the music but searches in a way that results are audio versions (the ones uploaded to YouTube music) and not YouTube.
+This app uses 2 simple apis. Spotify web api and khttp and Spotify to mp3 website.
 Few more features might be added in future.
 
 # Downloads
