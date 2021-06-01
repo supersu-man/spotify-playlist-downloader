@@ -2,7 +2,6 @@ package com.supersuman.spd
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -11,16 +10,12 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
-import com.google.android.material.snackbar.Snackbar
 import com.wrapper.spotify.SpotifyApi
-import com.wrapper.spotify.exceptions.SpotifyWebApiException
 import com.wrapper.spotify.model_objects.specification.Paging
 import com.wrapper.spotify.model_objects.specification.PlaylistTrack
-import org.apache.hc.core5.http.ParseException
 import java.io.*
 import java.net.URL
 import java.net.URLConnection
@@ -30,8 +25,12 @@ import kotlin.concurrent.thread
 class MainActivity : AppCompatActivity() {
 
     private lateinit var folderpath : File
-    private var title = ""
     private lateinit var spotifyApi : SpotifyApi
+    private var title = ""
+    private var videoLink = ""
+    private var query = ""
+    private var downloadLink = ""
+    private var queryNumber = 0
 
     private lateinit var permissionButton : Button
     private lateinit var subfolderText : EditText
@@ -43,10 +42,11 @@ class MainActivity : AppCompatActivity() {
     private lateinit var totalDownloadProgress : TextView
     private lateinit var errorTextView : TextView
 
-    private lateinit var completedArray : MutableList<String>
+    private lateinit var spotifyList : MutableList<String>
 
     private var spotifyHasSetup = false
 
+    private val customClass = CustomClass()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,52 +57,72 @@ class MainActivity : AppCompatActivity() {
         initListeners()
         modifyViews()
 
-
     }
 
     private fun modifyViews() {
         if(checkForPermissions()){
             permissionButton.visibility = View.GONE
         }
-
+        progressBar.keepScreenOn = true
     }
 
-    @SuppressLint("SetTextI18n")
     private fun initListeners() {
         downloadButton.setOnClickListener {
-            errorTextView.text = ""
-            closeKeyboard()
-            if(!checkForPermissions()){
-                snackbarMessage("Please grant the permission")
-            }else if(subfolderText.text.isEmpty() || spotifylinkedittext.text.isEmpty()){
-                snackbarMessage("Empty field")
-            }else if (checkForPermissions() && spotifyHasSetup){
-                thread {
-                    createDirectory(subfolderText.text.toString())
-                    val list = getPlaylistItems(spotifylinkedittext.text.toString())
-                    for (i in list.indices){
-                        val videoLink = getVideoLink(list[i])
-                        val downloadlink = getDownloadLink(videoLink)
-                        title = renameTitle()
-                        startDownload(downloadlink)
-                        runOnUiThread {
-                            totalDownloadProgress.text = "${i+1}/${list.size}"
-                        }
-                    }
-                }
-            }else{
-                snackbarMessage("What the java are you looking at")
+            errorTextView.text= ""
+            customClass.closeKeyboard(this)
+            if(isRequirementsMet()){
+                beginTheProcess()
             }
         }
         permissionButton.setOnClickListener {
-            closeKeyboard()
+            customClass.closeKeyboard(this)
             askForPermissions()
         }
     }
 
-    private fun snackbarMessage(string:String){
-        val parent : LinearLayout = findViewById(R.id.parentview)
-        Snackbar.make(parent, string, Snackbar.LENGTH_SHORT).show()
+    @SuppressLint("SetTextI18n")
+    private fun beginTheProcess() {
+        queryNumber = 0
+        spotifyList.clear()
+        createDirectory(subfolderText.text.toString())
+        thread {
+            spotifyList = getPlaylistItems(spotifylinkedittext.text.toString())
+            while (queryNumber < spotifyList.size){
+                query = spotifyList[queryNumber]
+                getVideoLink()
+                getDownloadLink()
+                startDownload()
+                if (isDownloadConfirmed()){
+                    title = ""
+                    videoLink = ""
+                    downloadLink = ""
+                    query = ""
+                    queryNumber+=1
+                }else{
+                    thread {
+                        runOnUiThread {
+                            errorTextView.text = "Error, retrying in 3 seconds"
+                        }
+                    }.join(3000)
+                    runOnUiThread {
+                        errorTextView.text = ""
+                    }
+                }
+            }
+        }
+    }
+
+    private fun isRequirementsMet(): Boolean {
+        if (!customClass.isInternetConnection()){
+            customClass.snackBarMessage(this,"Couldn't connect to Internet")
+        } else if(!checkForPermissions()){
+            customClass.snackBarMessage(this,"Please grant the permission")
+        } else if(subfolderText.text.isEmpty() || spotifylinkedittext.text.isEmpty()){
+            customClass.snackBarMessage(this,"Empty field")
+        } else if (checkForPermissions() && spotifyHasSetup){
+            return true
+        }
+        return false
     }
 
     private fun askForPermissions() {
@@ -120,7 +140,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private  fun checkForPermissions() : Boolean{
+    private fun checkForPermissions() : Boolean{
 
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
             Environment.isExternalStorageManager()
@@ -139,7 +159,7 @@ class MainActivity : AppCompatActivity() {
         progressBar = findViewById(R.id.progressBar)
         songTitle = findViewById(R.id.songTitile)
         songDownloadProgress = findViewById(R.id.songDownloadProgress)
-        completedArray = ArrayList()
+        spotifyList = mutableListOf()
         subfolderText = findViewById(R.id.subfolderName)
         totalDownloadProgress = findViewById(R.id.totalProgress)
         errorTextView = findViewById(R.id.errorTextView)
@@ -160,14 +180,14 @@ class MainActivity : AppCompatActivity() {
                     errorTextView.text = e.toString()
                 }
             }
-        }
+        }.join()
     }
 
     private fun getPlaylistItems(link: String): MutableList<String> {
         val arrayList: MutableList<String> = ArrayList()
         thread {
             try {
-                snackbarMessage("Gathering information")
+                customClass.snackBarMessage(this,"Gathering information")
                 val playlistId= link.split("playlist/")[1].split("?")[0]
                 val getPlaylistsItemsRequests = spotifyApi.getPlaylistsItems(playlistId).build()
                 var playlistTrackPaging: Paging<PlaylistTrack>?
@@ -177,7 +197,7 @@ class MainActivity : AppCompatActivity() {
                         playlistTrackPaging =
                             spotifyApi.getPlaylistsItems(playlistId).offset(i * 100).build().execute()
                     } catch (e: Exception) {
-                        e.printStackTrace()
+                        customClass.snackBarMessage(this,e.toString())
                     }
                     for (j in playlistTrackPaging!!.items.indices) {
                         val temp =playlistTrackPaging.items[j].track
@@ -186,10 +206,10 @@ class MainActivity : AppCompatActivity() {
                         arrayList.add("$songName by $artistName")
                     }
                 }
-                snackbarMessage("Information gathered successfully")
+                customClass.snackBarMessage(this,"Information gathered successfully")
             }catch (e:Exception){
                 runOnUiThread {
-                    errorTextView.text = e.toString()
+                    customClass.snackBarMessage(this,e.toString())
                 }
             }
         }.join()
@@ -204,41 +224,33 @@ class MainActivity : AppCompatActivity() {
         )
         newFolder.mkdirs()
         folderpath = newFolder
-
     }
 
-    private fun getVideoLink(searchQuery: String): String {
-        var videoLink=""
+    private fun getVideoLink(){
         thread {
             try {
-                val temp  = khttp.get("https://www.youtube.com/results?search_query=$searchQuery Auto-generated by YouTube&sp=EgIQAQ%253D%253D")
+                val temp  = khttp.get("https://www.youtube.com/results?search_query=$query Auto-generated by YouTube&sp=EgIQAQ%253D%253D")
                 val videoID = temp.text.split("estimatedResults")[1].split("videoId\":\"")[1].split(
                     "\""
                 )[0]
                 videoLink = "https://youtu.be/$videoID"
-            }catch (e:Exception){
-                runOnUiThread {
-                    errorTextView.text = e.toString()
-                }
-            }
+            } catch (e:Exception){}
         }.join()
-        return videoLink
     }
 
-    private fun  getDownloadLink(videoLink : String): String {
-        var downloadlink=""
+    private fun  getDownloadLink() {
         thread {
             try {
-                val s= khttp.get("https://yt1s.com/youtube-to-mp3/en2")
+                val s= khttp.get("https://yt1s.com/youtube-to-mp3/en2",timeout = 10.0)
                 val s1= khttp.post(
                     "https://yt1s.com/api/ajaxSearch/index", cookies = s.cookies, data = mapOf(
                         "vt" to "mp3",
                         "q" to videoLink
-                    ), allowRedirects = true
+                    ), allowRedirects = true,timeout = 10.0
                 )
                 title = s1.text.split("title\":\"")[1].split("\"")[0]
                 runOnUiThread {
-                    songTitle.text = title
+                    songTitle.text = renameTitle()
                     songDownloadProgress.text = "0%"
                     progressBar.progress = 0
                 }
@@ -248,17 +260,45 @@ class MainActivity : AppCompatActivity() {
                         "k" to s1.text.split(
                             "kc\":\""
                         )[1].split("\"")[0], "vid" to videoID
-                    )
+                    ),timeout = 10.0
                 )
-                val dlink = s2.text.split("dlink\":\"")[1].split("\"")[0].replace("\\", "")
-                downloadlink = dlink
-            }catch (e: Exception){
-                runOnUiThread {
-                    errorTextView.text = e.toString()
-                }
-            }
+                downloadLink= s2.text.split("dlink\":\"")[1].split("\"")[0].replace("\\", "")
+            }catch (e:Exception){}
         }.join()
-        return downloadlink
+    }
+    @SuppressLint("SetTextI18n")
+    private fun startDownload(){
+        thread {
+            try {
+                var count: Int
+                val url = URL(downloadLink)
+                val connection: URLConnection = url.openConnection()
+                connection.connect()
+                val lengthOfFile: Int = connection.contentLength
+                val input: InputStream = BufferedInputStream(url.openStream())
+                val output: OutputStream = FileOutputStream(File(folderpath, "${renameTitle()}.mp3"))
+                val data = ByteArray(1024)
+                var total: Long = 0
+                while (input.read(data).also { count = it } != -1) {
+                    total += count.toLong()
+                    val downloadedprogress = "" + (total * 100 / lengthOfFile).toInt()
+                    output.write(data, 0, count)
+                    if (downloadedprogress == "100"){
+                        println("${queryNumber+1} ${renameTitle()} Download Complete")
+                        runOnUiThread {
+                            totalDownloadProgress.text = "${queryNumber+1}/${spotifyList.size}"
+                        }
+                    }
+                    runOnUiThread {
+                        progressBar.progress = downloadedprogress.toInt()
+                        songDownloadProgress.text = "$downloadedprogress%"
+                    }
+                }
+                output.flush()
+                output.close()
+                input.close()
+            } catch (e:Exception){}
+        }.join()
     }
 
     private fun renameTitle(): String {
@@ -272,49 +312,14 @@ class MainActivity : AppCompatActivity() {
         return newtitle
     }
 
-    @SuppressLint("SetTextI18n")
-    private fun startDownload(downloadlink: String){
-        thread {
-            try {
-                var count: Int
-                val url = URL(downloadlink)
-                val connection: URLConnection = url.openConnection()
-                connection.connect()
-                val lengthOfFile: Int = connection.contentLength
-                val input: InputStream = BufferedInputStream(url.openStream())
-                val output: OutputStream = FileOutputStream(File(folderpath, "$title.mp3"))
-                val data = ByteArray(1024)
-                var total: Long = 0
-                while (input.read(data).also { count = it } != -1) {
-                    total += count.toLong()
-                    val downloadedprogress = "" + (total * 100 / lengthOfFile).toInt()
-                    output.write(data, 0, count)
-                    if (downloadedprogress == "100"){
-                        println("$title Download Complete")
-                    }
-                    runOnUiThread {
-                        progressBar.progress = downloadedprogress.toInt()
-                        songDownloadProgress.text = "$downloadedprogress%"
-                    }
-                }
-                output.flush()
-                output.close()
-                input.close()
-            }catch (e: Exception) {
-                runOnUiThread {
-                    errorTextView.text = e.toString()
-                }
+    private fun isDownloadConfirmed(): Boolean {
+        val files = folderpath.listFiles()
+        for(i in files!!){
+            if (renameTitle() in i.name){
+                return true
             }
-        }.join()
-    }
-
-    private fun closeKeyboard() {
-        val view: View? = this.currentFocus
-        if (view != null) {
-            val imm: InputMethodManager =
-                getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-            imm.hideSoftInputFromWindow(view.windowToken, 0)
         }
+        return false
     }
 
 }
