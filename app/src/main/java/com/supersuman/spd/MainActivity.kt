@@ -168,16 +168,21 @@ class MainActivity : AppCompatActivity() {
     private fun setupSpotify() {
         thread {
             try {
-                spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId)).setClientSecret(
-                    getString(R.string.clientSecret)
-                ).build()
-                val clientCredentialsRequest = spotifyApi.clientCredentials().build()
-                val clientCredentials = clientCredentialsRequest.execute()
-                spotifyApi.accessToken = clientCredentials.accessToken
-                spotifyHasSetup = true
+                if (customClass.isInternetConnection()) {
+                    spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId))
+                        .setClientSecret(
+                            getString(R.string.clientSecret)
+                        ).build()
+                    val clientCredentialsRequest = spotifyApi.clientCredentials().build()
+                    val clientCredentials = clientCredentialsRequest.execute()
+                    spotifyApi.accessToken = clientCredentials.accessToken
+                    spotifyHasSetup = true
+                } else{
+                    customClass.snackBarMessage(this,"Can't connect to the Internet")
+                }
             }catch (e:Exception){
                 runOnUiThread {
-                    errorTextView.text = e.toString()
+                    customClass.snackBarMessage(this, e.toString())
                 }
             }
         }.join()
