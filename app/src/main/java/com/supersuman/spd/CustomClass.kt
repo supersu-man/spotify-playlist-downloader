@@ -3,18 +3,19 @@ package com.supersuman.spd
 import android.app.Activity
 import android.content.Context.INPUT_METHOD_SERVICE
 import android.view.View
+import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
+import androidx.core.view.allViews
 import com.google.android.material.snackbar.Snackbar
 import kotlin.concurrent.thread
 
 class CustomClass {
 
     fun snackBarMessage(context: Activity, string: String){
-        Snackbar.make(context.window.decorView.rootView, string, Snackbar.LENGTH_SHORT).show()
+        val v = context.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
+        Snackbar.make(v, string, Snackbar.LENGTH_SHORT).show()
     }
-    fun snackBarMessage(view: View, string: String){
-        Snackbar.make(view, string, Snackbar.LENGTH_SHORT).show()
-    }
+
     fun closeKeyboard(context: Activity){
         val view = context.currentFocus
         if (view != null) {
@@ -22,6 +23,7 @@ class CustomClass {
             imm.hideSoftInputFromWindow(view.windowToken, 0)
         }
     }
+
     fun isInternetConnection(): Boolean {
         var returnVal = false
         thread {
