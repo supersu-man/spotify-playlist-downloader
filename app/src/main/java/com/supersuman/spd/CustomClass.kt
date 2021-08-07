@@ -2,12 +2,9 @@ package com.supersuman.spd
 
 import android.app.Activity
 import android.content.Context.INPUT_METHOD_SERVICE
-import android.view.View
 import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
-import androidx.core.view.allViews
 import com.google.android.material.snackbar.Snackbar
-import kotlin.concurrent.thread
 
 class CustomClass {
 
@@ -24,16 +21,4 @@ class CustomClass {
         }
     }
 
-    fun isInternetConnection(): Boolean {
-        var returnVal = false
-        thread {
-            returnVal = try {
-                khttp.get("https://www.google.com/")
-                true
-            }catch (e:Exception){
-                false
-            }
-        }.join()
-        return returnVal
-    }
 }
