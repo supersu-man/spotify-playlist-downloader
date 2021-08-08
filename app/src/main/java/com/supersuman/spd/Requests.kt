@@ -1,4 +1,4 @@
-package com.example.gitamite
+package com.supersuman.spd
 
 import okhttp3.JavaNetCookieJar
 import okhttp3.MultipartBody
@@ -25,6 +25,14 @@ class Requests {
         }
         httpClient = OkHttpClient.Builder()
             .cookieJar(JavaNetCookieJar(cookieManager))
+            .addNetworkInterceptor { chain ->
+                chain.proceed(
+                    chain.request()
+                        .newBuilder()
+                        .header("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/79.0.3945.94 Safari/537.36")
+                        .build()
+                )
+            }
             .build()
     }
 
@@ -36,7 +44,7 @@ class Requests {
     fun post(uri: String, multipartBody: MultipartBody): String? {
         try {
             val request = Request.Builder().url(uri).post(multipartBody).build()
-            val response = httpClient.newCall(request).execute().body?.string().toString()
+            val response = httpClient.newCall(request).execute().body?.string()
             return response
         }catch (e : SocketTimeoutException){
             return null
@@ -46,7 +54,7 @@ class Requests {
     fun get(uri: String): String? {
         try {
             val request = Request.Builder().url(uri).build()
-            val response = httpClient.newCall(request).execute().body?.string().toString()
+            val response = httpClient.newCall(request).execute().body?.string()
             return response
         } catch (e:SocketTimeoutException){
             return null

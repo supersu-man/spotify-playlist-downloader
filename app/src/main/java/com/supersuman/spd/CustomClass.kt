@@ -8,11 +8,6 @@ import com.google.android.material.snackbar.Snackbar
 
 class CustomClass {
 
-    fun snackBarMessage(context: Activity, string: String){
-        val v = context.findViewById<ViewGroup>(android.R.id.content).getChildAt(0)
-        Snackbar.make(v, string, Snackbar.LENGTH_SHORT).show()
-    }
-
     fun closeKeyboard(context: Activity){
         val view = context.currentFocus
         if (view != null) {

@@ -5,15 +5,15 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.Build
-import android.os.Bundle
-import android.os.Environment
+import android.os.*
 import android.provider.Settings
 import android.view.View
 import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
-import com.example.gitamite.Requests
+import com.google.android.material.snackbar.Snackbar
+import com.supersuman.githubapkupdater.Updater
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.specification.Paging
 import com.wrapper.spotify.model_objects.specification.PlaylistTrack
@@ -43,29 +43,82 @@ class MainActivity : AppCompatActivity() {
     private lateinit var downloadButton : Button
     private lateinit var totalDownloadProgress : TextView
     private lateinit var errorTextView : TextView
+    private lateinit var rootLayout: CoordinatorLayout
 
     private lateinit var spotifyList : MutableList<String>
 
     private var spotifyHasSetup = false
     private val requests = Requests()
     private val customClass = CustomClass()
+    private val updater = Updater(this,"https://github.com/supersu-man/SpotifyPlaylistDownloader/releases/latest")
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        setupSpotify()
         initviews()
+        thread {
+            checkForUpdates(updater)
+        }
+        setupSpotify()
         initListeners()
         modifyViews()
-
     }
 
-    private fun modifyViews() {
-        if(checkForPermissions()){
-            permissionButton.visibility = View.GONE
+    private fun initviews() {
+        rootLayout = findViewById(R.id.rootLayout)
+        spotifylinkedittext  = findViewById(R.id.spotifylinkedittext)
+        downloadButton = findViewById(R.id.downloadButton)
+        permissionButton = findViewById(R.id.permissionButton)
+        progressBar = findViewById(R.id.progressBar)
+        songTitle = findViewById(R.id.songTitile)
+        songDownloadProgress = findViewById(R.id.songDownloadProgress)
+        spotifyList = mutableListOf()
+        subfolderText = findViewById(R.id.subfolderName)
+        totalDownloadProgress = findViewById(R.id.totalProgress)
+        errorTextView = findViewById(R.id.errorTextView)
+    }
+
+    private fun checkForUpdates(updater: Updater){
+        if (updater.isInternetConnection()){
+            updater.init()
+            updater.isNewUpdateAvailable {
+                Snackbar.make(rootLayout,"New Update Found",Snackbar.LENGTH_INDEFINITE).setAction("Download"){
+                    if (updater.hasPermissionsGranted()){
+                        updater.requestDownload()
+                    } else{
+                        updater.requestMyPermissions {
+                            updater.requestDownload()
+                        }
+                    }
+                }.show()
+            }
+        }else{
+            runOnUiThread {
+                Snackbar.make(rootLayout,"Unable To Check For Updates",Snackbar.LENGTH_SHORT).show()
+            }
         }
-        progressBar.keepScreenOn = true
+    }
+
+    private fun setupSpotify() {
+        thread {
+            try {
+                if (requests.isInternetConnection()){
+                    spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId))
+                        .setClientSecret(
+                            getString(R.string.clientSecret)
+                        ).build()
+                    val clientCredentialsRequest = spotifyApi.clientCredentials().build()
+                    val clientCredentials = clientCredentialsRequest.execute()
+                    spotifyApi.accessToken = clientCredentials.accessToken
+                    spotifyHasSetup = true
+                }
+            }catch (e:Exception){
+                runOnUiThread {
+                    Snackbar.make(rootLayout,e.toString(),Snackbar.LENGTH_SHORT).show()
+                }
+            }
+        }.join()
     }
 
     private fun initListeners() {
@@ -80,6 +133,13 @@ class MainActivity : AppCompatActivity() {
             customClass.closeKeyboard(this)
             askForPermissions()
         }
+    }
+
+    private fun modifyViews() {
+        if(checkForPermissions()){
+            permissionButton.visibility = View.GONE
+        }
+        progressBar.keepScreenOn = true
     }
 
     @SuppressLint("SetTextI18n")
@@ -101,11 +161,10 @@ class MainActivity : AppCompatActivity() {
                     query = ""
                     queryNumber+=1
                 }else{
-                    thread {
-                        runOnUiThread {
-                            errorTextView.text = "Error, retrying in 3 seconds"
-                        }
-                    }.join(3000)
+                    runOnUiThread {
+                        errorTextView.text = "Error, retrying in 3 seconds"
+                    }
+                    Thread.sleep(3000)
                     runOnUiThread {
                         errorTextView.text = ""
                     }
@@ -116,11 +175,11 @@ class MainActivity : AppCompatActivity() {
 
     private fun isRequirementsMet(): Boolean {
         if (!requests.isInternetConnection()){
-            customClass.snackBarMessage(this,"Couldn't connect to Internet")
+            Snackbar.make(rootLayout,"Couldn't connect to Internet",Snackbar.LENGTH_SHORT).show()
         } else if(!checkForPermissions()){
-            customClass.snackBarMessage(this,"Please grant the permission")
+            Snackbar.make(rootLayout,"Please grant the permission",Snackbar.LENGTH_SHORT).show()
         } else if(subfolderText.text.isEmpty() || spotifylinkedittext.text.isEmpty()){
-            customClass.snackBarMessage(this,"Empty field")
+            Snackbar.make(rootLayout,"Empty field",Snackbar.LENGTH_SHORT).show()
         } else if (checkForPermissions() && spotifyHasSetup){
             return true
         }
@@ -154,58 +213,18 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun initviews() {
-        spotifylinkedittext  = findViewById(R.id.spotifylinkedittext)
-        downloadButton = findViewById(R.id.downloadButton)
-        permissionButton = findViewById(R.id.permissionButton)
-        progressBar = findViewById(R.id.progressBar)
-        songTitle = findViewById(R.id.songTitile)
-        songDownloadProgress = findViewById(R.id.songDownloadProgress)
-        spotifyList = mutableListOf()
-        subfolderText = findViewById(R.id.subfolderName)
-        totalDownloadProgress = findViewById(R.id.totalProgress)
-        errorTextView = findViewById(R.id.errorTextView)
-    }
-
-    private fun setupSpotify() {
-        thread {
-            try {
-                if (requests.isInternetConnection()) {
-                    spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId))
-                        .setClientSecret(
-                            getString(R.string.clientSecret)
-                        ).build()
-                    val clientCredentialsRequest = spotifyApi.clientCredentials().build()
-                    val clientCredentials = clientCredentialsRequest.execute()
-                    spotifyApi.accessToken = clientCredentials.accessToken
-                    spotifyHasSetup = true
-                } else{
-                    customClass.snackBarMessage(this,"Can't connect to the Internet")
-                }
-            }catch (e:Exception){
-                runOnUiThread {
-                    customClass.snackBarMessage(this, e.toString())
-                }
-            }
-        }.join()
-    }
-
     private fun getPlaylistItems(link: String): MutableList<String> {
         val arrayList: MutableList<String> = ArrayList()
         thread {
             try {
-                customClass.snackBarMessage(this,"Gathering information")
+                Snackbar.make(rootLayout,"Gathering information",Snackbar.LENGTH_SHORT).show()
                 val playlistId= link.split("playlist/")[1].split("?")[0]
                 val getPlaylistsItemsRequests = spotifyApi.getPlaylistsItems(playlistId).build()
                 var playlistTrackPaging: Paging<PlaylistTrack>?
                 playlistTrackPaging = getPlaylistsItemsRequests.execute()
                 for (i in 0..playlistTrackPaging!!.total / 100) {
-                    try {
-                        playlistTrackPaging =
-                            spotifyApi.getPlaylistsItems(playlistId).offset(i * 100).build().execute()
-                    } catch (e: Exception) {
-                        customClass.snackBarMessage(this,e.toString())
-                    }
+                    playlistTrackPaging =
+                        spotifyApi.getPlaylistsItems(playlistId).offset(i * 100).build().execute()
                     for (j in playlistTrackPaging!!.items.indices) {
                         val temp =playlistTrackPaging.items[j].track
                         val songName = temp.name
@@ -213,10 +232,10 @@ class MainActivity : AppCompatActivity() {
                         arrayList.add("$songName by $artistName")
                     }
                 }
-                customClass.snackBarMessage(this,"Information gathered successfully")
+                Snackbar.make(rootLayout,"Information gathered successfully",Snackbar.LENGTH_SHORT).show()
             }catch (e:Exception){
                 runOnUiThread {
-                    customClass.snackBarMessage(this,e.toString())
+                    Snackbar.make(rootLayout,e.toString(),Snackbar.LENGTH_SHORT).show()
                 }
             }
         }.join()
@@ -236,12 +255,27 @@ class MainActivity : AppCompatActivity() {
     private fun getVideoLink(){
         thread {
             try {
-                val temp  = requests.get("https://www.youtube.com/results?search_query=$query Auto-generated by YouTube&sp=EgIQAQ%253D%253D")!!
-                val videoID = temp.split("estimatedResults")[1].split("videoId\":\"")[1].split(
-                    "\""
-                )[0]
-                videoLink = "https://youtu.be/$videoID"
-            } catch (e:Exception){}
+                val response = requests.get("https://music.youtube.com/search?q=${query.replace(" ","+")}")!!
+                val jsonString = response.split("JSON.parse('\\x7b\\x22query\\x22")[1].split("data:")[1].split("'")[1]
+                val replace = jsonString
+                    .replace("\\x22","\"")
+                val y = replace.split("musicShelfRenderer")
+                val z = y.subList(1,3)
+                for (i in z){
+                    val category = i.split("text\"")[1].split("\"")[1]
+                    val type = i.split("\"musicVideoType\"")[1].split("\"")[1]
+                    val videoId = i.split("\"videoId\"")[1].split("\"")[1]
+                    if ("Top result" == category && type == "MUSIC_VIDEO_TYPE_ATV" ){
+                        videoLink =  "https://music.youtube.com/watch?v=$videoId"
+                        break
+                    }else if ("Songs" == category){
+                        videoLink =  "https://music.youtube.com/watch?v=$videoId"
+                    }
+                }
+                println(videoLink)
+            } catch (e:Exception){
+                println(e)
+            }
         }.join()
     }
 
@@ -264,6 +298,7 @@ class MainActivity : AppCompatActivity() {
             }
         }.join()
     }
+
     @SuppressLint("SetTextI18n")
     private fun startDownload(){
         thread {
@@ -307,6 +342,7 @@ class MainActivity : AppCompatActivity() {
 
         return requestBody
     }
+
     fun getmapped2(string1: String, string2: String) : MultipartBody{
         val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
             .addFormDataPart("k", string1)
@@ -330,7 +366,7 @@ class MainActivity : AppCompatActivity() {
     private fun isDownloadConfirmed(): Boolean {
         val files = folderpath.listFiles()
         for(i in files!!){
-            if (renameTitle() in i.name){
+            if (renameTitle() != "" && "${renameTitle()}.mp3" in i.name){
                 return true
             }
         }

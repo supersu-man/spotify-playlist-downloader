@@ -1,8 +1,5 @@
 package com.supersuman.spd
 
-
-import com.example.gitamite.Requests
-import okhttp3.MultipartBody
 import org.junit.Test
 
 
@@ -14,21 +11,31 @@ import org.junit.Test
 class ExampleUnitTest {
     @Test
     fun addition_isCorrect() {
-        val requests = Requests()
-        val s= requests.get("https://yt1s.com/youtube-to-mp3/en2")
-        val s1= requests.post("https://yt1s.com/api/ajaxSearch/index", getmapped())!!
-        println(s1)
-        val videoID = s1.split("vid\":\"")[1].split("\"")[0]
-        val k = s1.split("kc\":\"")[1].split("\"")[0]
-        //val s2 = requests.post("https://yt1s.com/api/ajaxConvert/convert", getmapped2(k,videoID))!!
-        //val downloadLink= s2.split("dlink\":\"")[1].split("\"")[0].replace("\\", "")
+        println(getVideoLink("laude lag gaye"))
+
     }
-    fun getmapped() : MultipartBody {
-        val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("q", "https://www.youtube.com/watch?v=Dy3u2IUAbtY")
-            .addFormDataPart("vt","mp3")
-            .build()
-        return requestBody
+    fun getVideoLink(query : String): String? {
+        val requests = Requests()
+        val response = requests.get("https://music.youtube.com/search?q=${query.replace(" ", "+")}")!!
+        val jsonString = response.split("JSON.parse('\\x7b\\x22query\\x22")[1].split("data:")[1].split("'")[1]
+
+        val replace = jsonString
+            .replace("\\x22","\"")
+
+        val y = replace.split("musicShelfRenderer")
+        val z = y.subList(1,3)
+        for (i in z){
+            val category = i.split("text\"")[1].split("\"")[1]
+            val type = i.split("\"musicVideoType\"")[1].split("\"")[1]
+            val videoId = i.split("\"videoId\"")[1].split("\"")[1]
+            if ("result" in category && type == "MUSIC_VIDEO_TYPE_ATV" ){
+                return "https://music.youtube.com/watch?v=$videoId"
+            }
+            if ("songs" in category){
+                return "https://music.youtube.com/watch?v=$videoId"
+            }
+        }
+        return null
     }
 
 }
