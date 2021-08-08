@@ -17,5 +17,5 @@ Few more features might be added in future.
 # Dependencies / Tools used
 - [Youtube to Mp3](https://yt1s.com/youtube-to-mp3/en2)
 - [Spotify Web Api Java](https://github.com/thelinmichael/spotify-web-api-java)
-- [khttp](https://github.com/ascclemens/khttp)
-- [YouTube](https://www.youtube.com/)
+- [Okhttp](https://square.github.io/okhttp/)
+- [YouTube Music](https://music.youtube.com/)
