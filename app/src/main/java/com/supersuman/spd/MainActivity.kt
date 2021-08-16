@@ -12,6 +12,7 @@ import android.widget.*
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
+import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
 import com.supersuman.githubapkupdater.Updater
 import com.wrapper.spotify.SpotifyApi
@@ -33,6 +34,8 @@ class MainActivity : AppCompatActivity() {
     private var query = ""
     private var downloadLink = ""
     private var queryNumber = 0
+    private var retries = 0
+    private var maxRetries = 0
 
     private lateinit var permissionButton : Button
     private lateinit var subfolderText : EditText
@@ -44,6 +47,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var totalDownloadProgress : TextView
     private lateinit var errorTextView : TextView
     private lateinit var rootLayout: CoordinatorLayout
+    private lateinit var slider : Slider
 
     private lateinit var spotifyList : MutableList<String>
 
@@ -77,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         subfolderText = findViewById(R.id.subfolderName)
         totalDownloadProgress = findViewById(R.id.totalProgress)
         errorTextView = findViewById(R.id.errorTextView)
+        slider = findViewById(R.id.retrySlider)
     }
 
     private fun checkForUpdates(updater: Updater){
@@ -122,6 +127,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initListeners() {
+        slider.addOnChangeListener { _, value, _ ->
+            maxRetries = value.toInt()
+        }
+        
         downloadButton.setOnClickListener {
             errorTextView.text = ""
             customClass.closeKeyboard(this)
@@ -129,6 +138,7 @@ class MainActivity : AppCompatActivity() {
                 beginTheProcess()
             }
         }
+
         permissionButton.setOnClickListener {
             customClass.closeKeyboard(this)
             askForPermissions()
@@ -160,13 +170,19 @@ class MainActivity : AppCompatActivity() {
                     downloadLink = ""
                     query = ""
                     queryNumber+=1
+                    retries=0
                 }else{
                     runOnUiThread {
-                        errorTextView.text = "Error, retrying in 3 seconds"
+                        retries+=1
+                        errorTextView.text = "Error, retrying in 3 seconds. ${maxRetries-retries} retries left."
                     }
                     Thread.sleep(3000)
                     runOnUiThread {
                         errorTextView.text = ""
+                    }
+                    if (retries>=maxRetries){
+                        queryNumber+=1
+                        retries=0
                     }
                 }
             }

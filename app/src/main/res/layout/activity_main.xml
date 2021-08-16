@@ -20,15 +20,22 @@
         android:layout_gravity="center"
         android:text="Grant Permission" />
 
+    <com.google.android.material.slider.Slider
+        android:layout_margin="20dp"
+        android:id="@+id/retrySlider"
+        android:valueFrom="3"
+        android:valueTo="30"
+        android:stepSize="1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        />
+
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/textInputLayout"
         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:hint="Sub Folder Name"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="20dp"
         >
         <com.google.android.material.textfield.TextInputEditText
@@ -44,9 +51,6 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:hint="Playlist Link"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
         android:layout_marginTop="20dp"
         android:layout_marginBottom="20dp"
         >

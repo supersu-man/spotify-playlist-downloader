@@ -14,8 +14,8 @@ android {
         applicationId "com.supersuman.spd"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 4
-        versionName "1.3"
+        versionCode 5
+        versionName "1.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -44,7 +44,7 @@ dependencies {
     implementation 'androidx.appcompat:appcompat:1.3.1'
     implementation 'com.google.android.material:material:1.4.0'
 
-    implementation ("androidx.test:runner:1.4.0")
+    implementation "androidx.test:runner:1.4.0"
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.3'
     testImplementation 'androidx.test.ext:junit-ktx:1.1.3'
