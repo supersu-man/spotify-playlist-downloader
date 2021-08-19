@@ -14,8 +14,8 @@ android {
         applicationId "com.supersuman.spd"
         minSdkVersion 21
         targetSdkVersion 30
-        versionCode 5
-        versionName "1.4"
+        versionCode 6
+        versionName "1.5"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -38,6 +38,7 @@ dependencies {
     implementation "com.squareup.okhttp3:okhttp-urlconnection:4.9.1"
     implementation 'com.squareup.okhttp3:okhttp:4.9.1'
     implementation 'com.github.supersu-man:GitHubAPKUpdater-Library:v1.1'
+    implementation 'com.github.yausername.youtubedl-android:library:0.12.4'
 
     implementation 'se.michaelthelin.spotify:spotify-web-api-java:6.5.4'
     implementation 'androidx.core:core-ktx:1.6.0'

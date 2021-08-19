@@ -18,7 +18,9 @@ import com.supersuman.githubapkupdater.Updater
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.specification.Paging
 import com.wrapper.spotify.model_objects.specification.PlaylistTrack
-import okhttp3.MultipartBody
+import com.yausername.youtubedl_android.YoutubeDL
+import com.yausername.youtubedl_android.YoutubeDLException
+import com.yausername.youtubedl_android.YoutubeDLRequest
 import java.io.*
 import java.net.URL
 import java.net.URLConnection
@@ -30,9 +32,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var folderpath : File
     private lateinit var spotifyApi : SpotifyApi
     private var title = ""
-    private var videoLink = ""
-    private var query = ""
-    private var downloadLink = ""
     private var queryNumber = 0
     private var retries = 0
     private var maxRetries = 0
@@ -52,6 +51,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var spotifyList : MutableList<String>
 
     private var spotifyHasSetup = false
+    private var youtubeDlHasSetup = false
     private val requests = Requests()
     private val customClass = CustomClass()
     private val updater = Updater(this,"https://github.com/supersu-man/SpotifyPlaylistDownloader/releases/latest")
@@ -64,6 +64,7 @@ class MainActivity : AppCompatActivity() {
         thread {
             checkForUpdates(updater)
         }
+        setupYoutubeDL()
         setupSpotify()
         initListeners()
         modifyViews()
@@ -126,6 +127,15 @@ class MainActivity : AppCompatActivity() {
         }.join()
     }
 
+    private fun setupYoutubeDL(){
+        thread {
+            try {
+                YoutubeDL.getInstance().init(this.applicationContext)
+                youtubeDlHasSetup = true
+            } catch (e: YoutubeDLException) { println(e) }
+        }
+    }
+
     private fun initListeners() {
         slider.addOnChangeListener { _, value, _ ->
             maxRetries = value.toInt()
@@ -135,6 +145,9 @@ class MainActivity : AppCompatActivity() {
             errorTextView.text = ""
             customClass.closeKeyboard(this)
             if(isRequirementsMet()){
+                queryNumber = 0
+                spotifyList.clear()
+                createDirectory(subfolderText.text.toString())
                 beginTheProcess()
             }
         }
@@ -154,21 +167,13 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun beginTheProcess() {
-        queryNumber = 0
-        spotifyList.clear()
-        createDirectory(subfolderText.text.toString())
         thread {
             spotifyList = getPlaylistItems(spotifylinkedittext.text.toString())
             while (queryNumber < spotifyList.size){
-                query = spotifyList[queryNumber]
-                getVideoLink()
-                getDownloadLink()
-                startDownload()
+                val id = getVideoId(spotifyList[queryNumber])
+                val downloadLink = getDownloadLink(id)
+                startDownload(downloadLink)
                 if (isDownloadConfirmed()){
-                    title = ""
-                    videoLink = ""
-                    downloadLink = ""
-                    query = ""
                     queryNumber+=1
                     retries=0
                 }else{
@@ -196,7 +201,7 @@ class MainActivity : AppCompatActivity() {
             Snackbar.make(rootLayout,"Please grant the permission",Snackbar.LENGTH_SHORT).show()
         } else if(subfolderText.text.isEmpty() || spotifylinkedittext.text.isEmpty()){
             Snackbar.make(rootLayout,"Empty field",Snackbar.LENGTH_SHORT).show()
-        } else if (checkForPermissions() && spotifyHasSetup){
+        } else if (checkForPermissions() && spotifyHasSetup && youtubeDlHasSetup){
             return true
         }
         return false
@@ -268,7 +273,8 @@ class MainActivity : AppCompatActivity() {
         folderpath = newFolder
     }
 
-    private fun getVideoLink(){
+    private fun getVideoId(query: String): String {
+        var videoId = ""
         thread {
             try {
                 val response = requests.get("https://music.youtube.com/search?q=${query.replace(" ","+")}")!!
@@ -280,43 +286,43 @@ class MainActivity : AppCompatActivity() {
                 for (i in z){
                     val category = i.split("text\"")[1].split("\"")[1]
                     val type = i.split("\"musicVideoType\"")[1].split("\"")[1]
-                    val videoId = i.split("\"videoId\"")[1].split("\"")[1]
                     if ("Top result" == category && type == "MUSIC_VIDEO_TYPE_ATV" ){
-                        videoLink =  "https://music.youtube.com/watch?v=$videoId"
+                        videoId = i.split("\"videoId\"")[1].split("\"")[1]
                         break
                     }else if ("Songs" == category){
-                        videoLink =  "https://music.youtube.com/watch?v=$videoId"
+                        videoId = i.split("\"videoId\"")[1].split("\"")[1]
                     }
                 }
-                println(videoLink)
             } catch (e:Exception){
                 println(e)
             }
         }.join()
+        return videoId
     }
 
-    private fun  getDownloadLink() {
+    private fun  getDownloadLink(id: String): String {
+        var downloadLink =""
         thread {
             try {
-                val s1= requests.post("https://yt1s.com/api/ajaxSearch/index", getmapped())!!
-                title = s1.split("title\":\"")[1].split("\"")[0]
-                runOnUiThread {
-                    songTitle.text = renameTitle()
+                val request = YoutubeDLRequest("https://www.youtube.com/watch?v=$id")
+                request.addOption("-f", "best")
+                val streamInfo = YoutubeDL.getInstance().getInfo(request)
+                title = streamInfo.title
+                    runOnUiThread {
+                    songTitle.text = streamInfo.title
                     songDownloadProgress.text = "0%"
                     progressBar.progress = 0
                 }
-                val videoID = s1.split("vid\":\"")[1].split("\"")[0]
-                val k = s1.split("k\":\"")[1].split("\"")[0]
-                val s2 = requests.post("https://yt1s.com/api/ajaxConvert/convert", getmapped2(k,videoID))!!
-                downloadLink= s2.split("dlink\":\"")[1].split("\"")[0].replace("\\", "")
+                downloadLink = streamInfo.url
             }catch (e:Exception){
                 println(e)
             }
         }.join()
+        return downloadLink
     }
 
     @SuppressLint("SetTextI18n")
-    private fun startDownload(){
+    private fun startDownload(downloadLink: String) {
         thread {
             try {
                 var count: Int
@@ -348,24 +354,6 @@ class MainActivity : AppCompatActivity() {
                 input.close()
             } catch (e:Exception){}
         }.join()
-    }
-
-    fun getmapped() : MultipartBody{
-        val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("q",videoLink)
-            .addFormDataPart("vt","mp3")
-            .build()
-
-        return requestBody
-    }
-
-    fun getmapped2(string1: String, string2: String) : MultipartBody{
-        val requestBody = MultipartBody.Builder().setType(MultipartBody.FORM)
-            .addFormDataPart("k", string1)
-            .addFormDataPart("vid", string2)
-            .build()
-
-        return requestBody
     }
 
     private fun renameTitle(): String {
