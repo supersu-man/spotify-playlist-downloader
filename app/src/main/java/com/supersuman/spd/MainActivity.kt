@@ -5,10 +5,15 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.os.*
+import android.os.Build
+import android.os.Bundle
+import android.os.Environment
 import android.provider.Settings
 import android.view.View
-import android.widget.*
+import android.widget.Button
+import android.widget.EditText
+import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
@@ -21,6 +26,9 @@ import com.wrapper.spotify.model_objects.specification.PlaylistTrack
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.io.*
 import java.net.URL
 import java.net.URLConnection
@@ -61,9 +69,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         initviews()
-        thread {
-            checkForUpdates(updater)
-        }
+        checkForUpdates(updater)
         setupYoutubeDL()
         setupSpotify()
         initListeners()
@@ -85,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         slider = findViewById(R.id.retrySlider)
     }
 
-    private fun checkForUpdates(updater: Updater){
+    private fun checkForUpdates(updater: Updater) = coroutineScope.launch(Dispatchers.IO){
         if (updater.isInternetConnection()){
             updater.init()
             updater.isNewUpdateAvailable {
@@ -106,34 +112,30 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSpotify() {
-        thread {
-            try {
-                if (requests.isInternetConnection()){
-                    spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId))
-                        .setClientSecret(
-                            getString(R.string.clientSecret)
-                        ).build()
-                    val clientCredentialsRequest = spotifyApi.clientCredentials().build()
-                    val clientCredentials = clientCredentialsRequest.execute()
-                    spotifyApi.accessToken = clientCredentials.accessToken
-                    spotifyHasSetup = true
-                }
-            }catch (e:Exception){
-                runOnUiThread {
-                    Snackbar.make(rootLayout,e.toString(),Snackbar.LENGTH_SHORT).show()
-                }
+    private fun setupSpotify() = coroutineScope.launch(Dispatchers.IO){
+        try {
+            if (requests.isInternetConnection()){
+                spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId))
+                    .setClientSecret(
+                        getString(R.string.clientSecret)
+                    ).build()
+                val clientCredentialsRequest = spotifyApi.clientCredentials().build()
+                val clientCredentials = clientCredentialsRequest.execute()
+                spotifyApi.accessToken = clientCredentials.accessToken
+                spotifyHasSetup = true
             }
-        }.join()
+        }catch (e:Exception){
+            runOnUiThread {
+                Snackbar.make(rootLayout,e.toString(),Snackbar.LENGTH_SHORT).show()
+            }
+        }
     }
 
-    private fun setupYoutubeDL(){
-        thread {
-            try {
-                YoutubeDL.getInstance().init(this.applicationContext)
-                youtubeDlHasSetup = true
-            } catch (e: YoutubeDLException) { println(e) }
-        }
+    private fun setupYoutubeDL() = coroutineScope.launch(Dispatchers.IO){
+        try {
+            YoutubeDL.getInstance().init(applicationContext)
+            youtubeDlHasSetup = true
+        } catch (e: YoutubeDLException) { println(e) }
     }
 
     private fun initListeners() {
@@ -144,11 +146,13 @@ class MainActivity : AppCompatActivity() {
         downloadButton.setOnClickListener {
             errorTextView.text = ""
             customClass.closeKeyboard(this)
-            if(isRequirementsMet()){
-                queryNumber = 0
-                spotifyList.clear()
-                createDirectory(subfolderText.text.toString())
-                beginTheProcess()
+            coroutineScope.launch(Dispatchers.IO){
+                if(isRequirementsMet()){
+                    queryNumber = 0
+                    spotifyList.clear()
+                    createDirectory(subfolderText.text.toString())
+                    beginTheProcess()
+                }
             }
         }
 
@@ -166,35 +170,36 @@ class MainActivity : AppCompatActivity() {
     }
 
     @SuppressLint("SetTextI18n")
-    private fun beginTheProcess() {
-        thread {
-            spotifyList = getPlaylistItems(spotifylinkedittext.text.toString())
-            while (queryNumber < spotifyList.size){
-                val id = getVideoId(spotifyList[queryNumber])
-                val downloadLink = getDownloadLink(id)
-                startDownload(downloadLink)
-                if (isDownloadConfirmed()){
+    private suspend fun beginTheProcess() {
+
+        spotifyList = getPlaylistItems(spotifylinkedittext.text.toString())
+
+        while (queryNumber < spotifyList.size){
+            val id = getVideoId(spotifyList[queryNumber])
+            val downloadLink = getDownloadLink(id)
+            startDownload(downloadLink)
+            if (isDownloadConfirmed()){
+                queryNumber+=1
+                retries=0
+            }else{
+                runOnUiThread {
+                    retries+=1
+                    errorTextView.text = "Error, retrying in 3 seconds. ${maxRetries-retries} retries left."
+                }
+                delay(3000)
+                runOnUiThread {
+                    errorTextView.text = ""
+                }
+                if (retries>=maxRetries){
                     queryNumber+=1
                     retries=0
-                }else{
-                    runOnUiThread {
-                        retries+=1
-                        errorTextView.text = "Error, retrying in 3 seconds. ${maxRetries-retries} retries left."
-                    }
-                    Thread.sleep(3000)
-                    runOnUiThread {
-                        errorTextView.text = ""
-                    }
-                    if (retries>=maxRetries){
-                        queryNumber+=1
-                        retries=0
-                    }
                 }
             }
         }
+
     }
 
-    private fun isRequirementsMet(): Boolean {
+    private suspend fun isRequirementsMet(): Boolean {
         if (!requests.isInternetConnection()){
             Snackbar.make(rootLayout,"Couldn't connect to Internet",Snackbar.LENGTH_SHORT).show()
         } else if(!checkForPermissions()){
@@ -223,7 +228,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkForPermissions() : Boolean{
-
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
             Environment.isExternalStorageManager()
         }else{
@@ -236,31 +240,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun getPlaylistItems(link: String): MutableList<String> {
         val arrayList: MutableList<String> = ArrayList()
-        thread {
-            try {
-                Snackbar.make(rootLayout,"Gathering information",Snackbar.LENGTH_SHORT).show()
-                val playlistId= link.split("playlist/")[1].split("?")[0]
-                val getPlaylistsItemsRequests = spotifyApi.getPlaylistsItems(playlistId).build()
-                var playlistTrackPaging: Paging<PlaylistTrack>?
-                playlistTrackPaging = getPlaylistsItemsRequests.execute()
-                for (i in 0..playlistTrackPaging!!.total / 100) {
-                    playlistTrackPaging =
-                        spotifyApi.getPlaylistsItems(playlistId).offset(i * 100).build().execute()
-                    for (j in playlistTrackPaging!!.items.indices) {
-                        val temp =playlistTrackPaging.items[j].track
-                        val songName = temp.name
-                        val artistName = temp.toString().split("artists=")[1].split("name=")[1].split(",")[0]
-                        arrayList.add("$songName by $artistName")
-                    }
-                }
-                Snackbar.make(rootLayout,"Information gathered successfully",Snackbar.LENGTH_SHORT).show()
-            }catch (e:Exception){
-                runOnUiThread {
-                    Snackbar.make(rootLayout,e.toString(),Snackbar.LENGTH_SHORT).show()
+        try {
+            Snackbar.make(rootLayout,"Gathering information",Snackbar.LENGTH_SHORT).show()
+            val playlistId= link.split("playlist/")[1].split("?")[0]
+            val getPlaylistsItemsRequests = spotifyApi.getPlaylistsItems(playlistId).build()
+            var playlistTrackPaging: Paging<PlaylistTrack>?
+            playlistTrackPaging = getPlaylistsItemsRequests.execute()
+            for (i in 0..playlistTrackPaging!!.total / 100) {
+                playlistTrackPaging =
+                    spotifyApi.getPlaylistsItems(playlistId).offset(i * 100).build().execute()
+                for (j in playlistTrackPaging!!.items.indices) {
+                    val temp = playlistTrackPaging.items[j].track
+                    val songName = temp.name
+                    val artistName = temp.toString().split("artists=")[1].split("name=")[1].split(",")[0]
+                    arrayList.add("$songName by $artistName")
                 }
             }
-        }.join()
-
+            Snackbar.make(rootLayout,"Information gathered successfully",Snackbar.LENGTH_SHORT).show()
+        }catch (e:Exception){
+            runOnUiThread {
+                Snackbar.make(rootLayout,e.toString(),Snackbar.LENGTH_SHORT).show()
+            }
+        }
         return arrayList
     }
 
@@ -273,87 +274,79 @@ class MainActivity : AppCompatActivity() {
         folderpath = newFolder
     }
 
-    private fun getVideoId(query: String): String {
+    private suspend fun getVideoId(query: String): String {
         var videoId = ""
-        thread {
-            try {
-                val response = requests.get("https://music.youtube.com/search?q=${query.replace(" ","+")}")!!
-                val jsonString = response.split("JSON.parse('\\x7b\\x22query\\x22")[1].split("data:")[1].split("'")[1]
-                val replace = jsonString
-                    .replace("\\x22","\"")
-                val y = replace.split("musicShelfRenderer")
-                val z = y.subList(1,3)
-                for (i in z){
-                    val category = i.split("text\"")[1].split("\"")[1]
-                    val type = i.split("\"musicVideoType\"")[1].split("\"")[1]
-                    if ("Top result" == category && type == "MUSIC_VIDEO_TYPE_ATV" ){
-                        videoId = i.split("\"videoId\"")[1].split("\"")[1]
-                        break
-                    }else if ("Songs" == category){
-                        videoId = i.split("\"videoId\"")[1].split("\"")[1]
-                    }
+        try {
+            val response = requests.get("https://music.youtube.com/search?q=${query.replace(" ","+")}")!!
+            val jsonString = response.split("JSON.parse('\\x7b\\x22query\\x22")[1].split("data:")[1].split("'")[1]
+            val replace = jsonString
+                .replace("\\x22","\"")
+            val y = replace.split("musicShelfRenderer")
+            val z = y.subList(1,3)
+            for (i in z){
+                val category = i.split("text\"")[1].split("\"")[1]
+                val type = i.split("\"musicVideoType\"")[1].split("\"")[1]
+                if ("Top result" == category && type == "MUSIC_VIDEO_TYPE_ATV" ){
+                    videoId = i.split("\"videoId\"")[1].split("\"")[1]
+                    break
+                }else if ("Songs" == category){
+                    videoId = i.split("\"videoId\"")[1].split("\"")[1]
                 }
-            } catch (e:Exception){
-                println(e)
             }
-        }.join()
+        } catch (e:Exception){ println(e) }
         return videoId
     }
 
-    private fun  getDownloadLink(id: String): String {
+    private fun getDownloadLink(id: String): String {
         var downloadLink =""
-        thread {
-            try {
-                val request = YoutubeDLRequest("https://www.youtube.com/watch?v=$id")
-                request.addOption("-f", "best")
-                val streamInfo = YoutubeDL.getInstance().getInfo(request)
-                title = streamInfo.title
-                    runOnUiThread {
-                    songTitle.text = streamInfo.title
-                    songDownloadProgress.text = "0%"
-                    progressBar.progress = 0
-                }
-                downloadLink = streamInfo.url
-            }catch (e:Exception){
-                println(e)
+        try {
+            val request = YoutubeDLRequest("https://www.youtube.com/watch?v=$id")
+            request.addOption("-f", "best")
+            val streamInfo = YoutubeDL.getInstance().getInfo(request)
+            title = streamInfo.title
+                runOnUiThread {
+                songTitle.text = streamInfo.title
+                songDownloadProgress.text = "0%"
+                progressBar.progress = 0
             }
-        }.join()
+            downloadLink = streamInfo.url
+        }catch (e:Exception){
+            println(e)
+        }
         return downloadLink
     }
 
     @SuppressLint("SetTextI18n")
     private fun startDownload(downloadLink: String) {
-        thread {
-            try {
-                var count: Int
-                val url = URL(downloadLink)
-                val connection: URLConnection = url.openConnection()
-                connection.connect()
-                val lengthOfFile: Int = connection.contentLength
-                val input: InputStream = BufferedInputStream(url.openStream())
-                val output: OutputStream = FileOutputStream(File(folderpath, "${renameTitle()}.mp3"))
-                val data = ByteArray(1024)
-                var total: Long = 0
-                while (input.read(data).also { count = it } != -1) {
-                    total += count.toLong()
-                    val downloadedprogress = "" + (total * 100 / lengthOfFile).toInt()
-                    output.write(data, 0, count)
-                    if (downloadedprogress == "100"){
-                        println("${queryNumber+1} ${renameTitle()} Download Complete")
-                        runOnUiThread {
-                            totalDownloadProgress.text = "${queryNumber+1}/${spotifyList.size}"
-                        }
-                    }
+        try {
+            var count: Int
+            val url = URL(downloadLink)
+            val connection: URLConnection = url.openConnection()
+            connection.connect()
+            val lengthOfFile: Int = connection.contentLength
+            val input: InputStream = BufferedInputStream(url.openStream())
+            val output: OutputStream = FileOutputStream(File(folderpath, "${renameTitle()}.mp3"))
+            val data = ByteArray(1024)
+            var total: Long = 0
+            while (input.read(data).also { count = it } != -1) {
+                total += count.toLong()
+                val downloadedprogress = "" + (total * 100 / lengthOfFile).toInt()
+                output.write(data, 0, count)
+                if (downloadedprogress == "100"){
+                    println("${queryNumber+1} ${renameTitle()} Download Complete")
                     runOnUiThread {
-                        progressBar.progress = downloadedprogress.toInt()
-                        songDownloadProgress.text = "$downloadedprogress%"
+                        totalDownloadProgress.text = "${queryNumber+1}/${spotifyList.size}"
                     }
                 }
-                output.flush()
-                output.close()
-                input.close()
-            } catch (e:Exception){}
-        }.join()
+                runOnUiThread {
+                    progressBar.progress = downloadedprogress.toInt()
+                    songDownloadProgress.text = "$downloadedprogress%"
+                }
+            }
+            output.flush()
+            output.close()
+            input.close()
+        } catch (e:Exception){}
     }
 
     private fun renameTitle(): String {

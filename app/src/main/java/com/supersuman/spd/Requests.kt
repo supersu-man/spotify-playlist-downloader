@@ -1,5 +1,8 @@
 package com.supersuman.spd
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.JavaNetCookieJar
 import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
@@ -9,6 +12,8 @@ import java.net.CookieManager
 import java.net.CookiePolicy
 import java.net.SocketTimeoutException
 import kotlin.concurrent.thread
+
+val coroutineScope = CoroutineScope(Dispatchers.Main)
 
 class Requests {
 
@@ -41,36 +46,23 @@ class Requests {
         CookieManager.setDefault(null)
     }
 
-    fun post(uri: String, multipartBody: MultipartBody): String? {
-        try {
-            val request = Request.Builder().url(uri).post(multipartBody).build()
-            val response = httpClient.newCall(request).execute().body?.string()
-            return response
-        }catch (e : SocketTimeoutException){
-            return null
-        }
-    }
-
-    fun get(uri: String): String? {
-        try {
-            val request = Request.Builder().url(uri).build()
-            val response = httpClient.newCall(request).execute().body?.string()
-            return response
-        } catch (e:SocketTimeoutException){
-            return null
-        }
-    }
-
-    fun isInternetConnection(): Boolean {
-        var returnVal = false
-        thread {
-            returnVal = try {
-                get("https://www.google.com/")
-                true
-            }catch (e:Exception){
-                false
+    suspend fun get(uri: String): String? {
+        return withContext(Dispatchers.IO) {
+            try {
+                val request = Request.Builder().url(uri).build()
+                return@withContext httpClient.newCall(request).execute().body?.string().toString()
+            } catch (e: SocketTimeoutException) {
+                return@withContext null
             }
-        }.join()
-        return returnVal
+        }
+    }
+
+    suspend fun isInternetConnection(): Boolean {
+        return try {
+            get("https://www.google.com/")
+            true
+        } catch (e:Exception){
+            false
+        }
     }
 }
