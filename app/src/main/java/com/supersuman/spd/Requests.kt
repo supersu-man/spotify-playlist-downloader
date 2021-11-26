@@ -4,16 +4,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.JavaNetCookieJar
-import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.net.CookieHandler
 import java.net.CookieManager
 import java.net.CookiePolicy
 import java.net.SocketTimeoutException
-import kotlin.concurrent.thread
 
-val coroutineScope = CoroutineScope(Dispatchers.Main)
+val coroutineScope = CoroutineScope(Dispatchers.IO)
 
 class Requests {
 

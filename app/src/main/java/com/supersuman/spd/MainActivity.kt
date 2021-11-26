@@ -32,7 +32,6 @@ import kotlinx.coroutines.launch
 import java.io.*
 import java.net.URL
 import java.net.URLConnection
-import kotlin.concurrent.thread
 
 
 class MainActivity : AppCompatActivity() {
@@ -91,7 +90,7 @@ class MainActivity : AppCompatActivity() {
         slider = findViewById(R.id.retrySlider)
     }
 
-    private fun checkForUpdates(updater: Updater) = coroutineScope.launch(Dispatchers.IO){
+    private fun checkForUpdates(updater: Updater) = coroutineScope.launch{
         if (updater.isInternetConnection()){
             updater.init()
             updater.isNewUpdateAvailable {
@@ -112,7 +111,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSpotify() = coroutineScope.launch(Dispatchers.IO){
+    private fun setupSpotify() = coroutineScope.launch{
         try {
             if (requests.isInternetConnection()){
                 spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.clientId))
@@ -131,7 +130,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupYoutubeDL() = coroutineScope.launch(Dispatchers.IO){
+    private fun setupYoutubeDL() = coroutineScope.launch{
         try {
             YoutubeDL.getInstance().init(applicationContext)
             youtubeDlHasSetup = true
@@ -146,7 +145,7 @@ class MainActivity : AppCompatActivity() {
         downloadButton.setOnClickListener {
             errorTextView.text = ""
             customClass.closeKeyboard(this)
-            coroutineScope.launch(Dispatchers.IO){
+            coroutineScope.launch{
                 if(isRequirementsMet()){
                     queryNumber = 0
                     spotifyList.clear()
@@ -196,7 +195,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
     }
 
     private suspend fun isRequirementsMet(): Boolean {
