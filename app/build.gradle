@@ -14,9 +14,11 @@ android {
         applicationId "com.supersuman.spd"
         minSdkVersion 21
         targetSdkVersion 31
-        versionCode 8
-        versionName "1.6.1"
+        versionCode 9
+        versionName "1.6.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField ("String", "CLIENT_ID", getClientId())
+        buildConfigField ("String", "CLIENT_SECRET", getClientSecret())
     }
 
     buildTypes {
@@ -32,6 +34,20 @@ android {
     kotlinOptions {
         jvmTarget = '1.8'
     }
+}
+
+String getClientId() {
+    def propFile = rootProject.file("./local.properties")
+    def properties = new Properties()
+    properties.load(new FileInputStream(propFile))
+    return properties['CLIENT_ID']
+}
+
+String getClientSecret() {
+    def propFile = rootProject.file("./local.properties")
+    def properties = new Properties()
+    properties.load(new FileInputStream(propFile))
+    return properties['CLIENT_SECRET']
 }
 
 dependencies {
