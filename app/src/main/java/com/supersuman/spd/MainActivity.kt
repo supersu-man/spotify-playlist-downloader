@@ -26,9 +26,9 @@ import com.wrapper.spotify.model_objects.specification.PlaylistTrack
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLException
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import java.io.*
 import java.net.URL
 import java.net.URLConnection
@@ -67,10 +67,13 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        val jsonString = this.assets.open("secrets.json").bufferedReader().use { it.readText() }
+        val json = JSONObject(jsonString)
+
         initviews()
         checkForUpdates(updater)
         setupYoutubeDL()
-        setupSpotify()
+        setupSpotify(json)
         initListeners()
         modifyViews()
     }
@@ -111,11 +114,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSpotify() = coroutineScope.launch{
+    private fun setupSpotify(json: JSONObject) = coroutineScope.launch{
         try {
             if (requests.isInternetConnection()){
-                spotifyApi = SpotifyApi.Builder().setClientId(BuildConfig.CLIENT_ID)
-                    .setClientSecret(BuildConfig.CLIENT_SECRET).build()
+                spotifyApi = SpotifyApi.Builder().setClientId(json["CLIENT_ID"].toString())
+                    .setClientSecret(json["CLIENT_SECRET"].toString()).build()
                 val clientCredentialsRequest = spotifyApi.clientCredentials().build()
                 val clientCredentials = clientCredentialsRequest.execute()
                 spotifyApi.accessToken = clientCredentials.accessToken

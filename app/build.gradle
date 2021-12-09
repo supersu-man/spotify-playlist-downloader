@@ -17,8 +17,7 @@ android {
         versionCode 9
         versionName "1.6.2"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField ("String", "CLIENT_ID", getClientId())
-        buildConfigField ("String", "CLIENT_SECRET", getClientSecret())
+
     }
 
     buildTypes {
@@ -36,23 +35,9 @@ android {
     }
 }
 
-String getClientId() {
-    def propFile = rootProject.file("./local.properties")
-    def properties = new Properties()
-    properties.load(new FileInputStream(propFile))
-    return properties['CLIENT_ID']
-}
-
-String getClientSecret() {
-    def propFile = rootProject.file("./local.properties")
-    def properties = new Properties()
-    properties.load(new FileInputStream(propFile))
-    return properties['CLIENT_SECRET']
-}
-
 dependencies {
-    implementation "com.squareup.okhttp3:okhttp-urlconnection:4.9.1"
-    implementation 'com.squareup.okhttp3:okhttp:4.9.1'
+    implementation "com.squareup.okhttp3:okhttp-urlconnection:5.0.0-alpha.3"
+    implementation 'com.squareup.okhttp3:okhttp:5.0.0-alpha.3'
     implementation 'com.github.supersu-man:GitHubAPKUpdater-Library:v1.5'
     implementation 'com.github.yausername.youtubedl-android:library:0.12.4'
 
