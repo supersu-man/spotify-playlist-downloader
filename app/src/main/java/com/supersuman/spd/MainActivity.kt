@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.view.View
+import android.view.textservice.TextInfo
 import android.widget.Button
 import android.widget.EditText
 import android.widget.ProgressBar
@@ -20,6 +21,8 @@ import androidx.core.app.ActivityCompat
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.TextInputEditText
+import com.google.android.material.textview.MaterialTextView
 import com.supersuman.githubapkupdater.Updater
 import com.wrapper.spotify.SpotifyApi
 import com.wrapper.spotify.model_objects.specification.Paging
@@ -45,14 +48,14 @@ class MainActivity : AppCompatActivity() {
     private var maxRetries = 0
 
     private lateinit var permissionButton : MaterialButton
-    private lateinit var subfolderText : EditText
-    private lateinit var spotifylinkedittext : EditText
-    private lateinit var songTitle : TextView
-    private lateinit var songDownloadProgress : TextView
+    private lateinit var subfolderText : TextInputEditText
+    private lateinit var spotifylinkedittext : TextInputEditText
+    private lateinit var songTitle : MaterialTextView
+    private lateinit var songDownloadProgress : MaterialTextView
     private lateinit var progressBar : ProgressBar
     private lateinit var downloadButton : MaterialButton
-    private lateinit var totalDownloadProgress : TextView
-    private lateinit var errorTextView : TextView
+    private lateinit var totalDownloadProgress : MaterialTextView
+    private lateinit var errorTextView : MaterialTextView
     private lateinit var rootLayout: CoordinatorLayout
     private lateinit var slider : Slider
 
@@ -204,7 +207,7 @@ class MainActivity : AppCompatActivity() {
             Snackbar.make(rootLayout,"Couldn't connect to Internet",Snackbar.LENGTH_SHORT).show()
         } else if(!checkForPermissions()){
             Snackbar.make(rootLayout,"Please grant the permission",Snackbar.LENGTH_SHORT).show()
-        } else if(subfolderText.text.isEmpty() || spotifylinkedittext.text.isEmpty()){
+        } else if(subfolderText.text?.isEmpty() == true || spotifylinkedittext.text?.isEmpty() == true){
             Snackbar.make(rootLayout,"Empty field",Snackbar.LENGTH_SHORT).show()
         } else if (checkForPermissions() && spotifyHasSetup && youtubeDlHasSetup){
             return true
