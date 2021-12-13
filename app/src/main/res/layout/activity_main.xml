@@ -13,7 +13,7 @@
         android:gravity="center"
         android:layout_height="match_parent">
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/permissionButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -78,14 +78,13 @@
 
     <com.google.android.material.progressindicator.LinearProgressIndicator
         android:id="@+id/progressBar"
-        android:progressTint="?attr/colorPrimary"
         android:layout_width="match_parent"
         app:trackThickness="12dp"
         app:trackCornerRadius="4dp"
         android:layout_margin="30dp"
         android:layout_height="wrap_content"/>
 
-    <Button
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/downloadButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

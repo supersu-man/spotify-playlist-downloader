@@ -17,6 +17,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
+import com.google.android.material.button.MaterialButton
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
 import com.supersuman.githubapkupdater.Updater
@@ -43,13 +44,13 @@ class MainActivity : AppCompatActivity() {
     private var retries = 0
     private var maxRetries = 0
 
-    private lateinit var permissionButton : Button
+    private lateinit var permissionButton : MaterialButton
     private lateinit var subfolderText : EditText
     private lateinit var spotifylinkedittext : EditText
     private lateinit var songTitle : TextView
     private lateinit var songDownloadProgress : TextView
     private lateinit var progressBar : ProgressBar
-    private lateinit var downloadButton : Button
+    private lateinit var downloadButton : MaterialButton
     private lateinit var totalDownloadProgress : TextView
     private lateinit var errorTextView : TextView
     private lateinit var rootLayout: CoordinatorLayout
