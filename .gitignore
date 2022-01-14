@@ -63,4 +63,5 @@ fastlane/screenshots
 fastlane/test_output
 fastlane/readme.md
 
-app/src/main/assets/secrets.json
+app/src/main/res/values/secrets.xml
+app/src/main/res/values/secrets.xml~

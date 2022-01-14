@@ -17,7 +17,6 @@ android {
         versionCode 11
         versionName "1.6.4"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-
     }
 
     buildTypes {
@@ -43,7 +42,7 @@ dependencies {
 
     implementation 'se.michaelthelin.spotify:spotify-web-api-java:6.5.4'
     implementation 'androidx.core:core-ktx:1.7.0'
-    implementation 'androidx.appcompat:appcompat:1.4.0'
+    implementation 'androidx.appcompat:appcompat:1.4.1'
     implementation 'com.google.android.material:material:1.6.0-alpha01'
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.5.2'
 

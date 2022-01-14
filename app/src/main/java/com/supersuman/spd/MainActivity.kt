@@ -10,11 +10,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
 import android.view.View
-import android.view.textservice.TextInfo
-import android.widget.Button
-import android.widget.EditText
 import android.widget.ProgressBar
-import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.app.ActivityCompat
@@ -71,13 +67,10 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val jsonString = this.assets.open("secrets.json").bufferedReader().use { it.readText() }
-        val json = JSONObject(jsonString)
-
         initviews()
         checkForUpdates(updater)
         setupYoutubeDL()
-        setupSpotify(json)
+        setupSpotify()
         initListeners()
         modifyViews()
     }
@@ -118,11 +111,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupSpotify(json: JSONObject) = coroutineScope.launch{
+    private fun setupSpotify() = coroutineScope.launch{
         try {
             if (requests.isInternetConnection()){
-                spotifyApi = SpotifyApi.Builder().setClientId(json["CLIENT_ID"].toString())
-                    .setClientSecret(json["CLIENT_SECRET"].toString()).build()
+                spotifyApi = SpotifyApi.Builder().setClientId(getString(R.string.CLIENT_ID))
+                    .setClientSecret(getString(R.string.CLIENT_SECRET)).build()
                 val clientCredentialsRequest = spotifyApi.clientCredentials().build()
                 val clientCredentials = clientCredentialsRequest.execute()
                 spotifyApi.accessToken = clientCredentials.accessToken

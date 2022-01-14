@@ -14,14 +14,13 @@ jobs:
         env:
           clientId: ${{ secrets.CLIENT_ID }}
           clientSecret: ${{ secrets.CLIENT_SECRET }}
-          path: app/src/main/assets/secrets.json
+          path: app/src/main/res/values/secrets.xml
         run: |
-          mkdir -p "app/src/main/assets"
           touch $path
-          echo { >> $path
-          echo \"CLIENT_ID\" : \"$clientId\", >> $path
-          echo \"CLIENT_SECRET\" : \"$clientSecret\" >> $path
-          echo } >> $path
+          echo \<resources\> >> $path
+          echo \<string name=\"CLIENT_ID\"\>$clientId\</string\> >> $path
+          echo \<string name=\"CLIENT_SECRET\"\>$clientSecret\</string\> >> $path
+          echo \</resources\> >> $path
 
       - name: Build APK
         run: bash ./gradlew assembleRelease
