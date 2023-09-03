@@ -15,12 +15,24 @@ jobs:
           text: ${{ github.event.head_commit.message }}
           regex: '^v[0-9]+\.[0-9]+\.[0-9]+$'
 
-      - name: Set Up JDK
+      - name: Setup JDK
         uses: actions/setup-java@v3
         with:
           distribution: 'zulu'
           java-version: '17'
           cache: 'gradle'
+
+      - name: Access Api keys
+        env:
+          clientId: ${{ secrets.CLIENT_ID }}
+          clientSecret: ${{ secrets.CLIENT_SECRET }}
+          path: app/src/main/res/values/secrets.xml
+        run: |
+          touch $path
+          echo \<resources\> >> $path
+          echo \<string name=\"CLIENT_ID\"\>$clientId\</string\> >> $path
+          echo \<string name=\"CLIENT_SECRET\"\>$clientSecret\</string\> >> $path
+          echo \</resources\> >> $path
 
       - name: Build APK
         id: build
