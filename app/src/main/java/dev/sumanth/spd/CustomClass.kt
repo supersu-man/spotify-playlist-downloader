@@ -2,9 +2,7 @@ package com.supersuman.spd
 
 import android.app.Activity
 import android.content.Context.INPUT_METHOD_SERVICE
-import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
-import com.google.android.material.snackbar.Snackbar
 
 class CustomClass {
 

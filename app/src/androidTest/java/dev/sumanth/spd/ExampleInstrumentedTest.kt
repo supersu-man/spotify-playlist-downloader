@@ -1,6 +1,5 @@
 package com.supersuman.spd
 
-import android.os.Environment
 import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.yausername.youtubedl_android.YoutubeDL
@@ -10,9 +9,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.Assert.*
 import java.io.*
-import java.net.URL
-import java.net.URLConnection
-import kotlin.concurrent.thread
 
 /**
  * Instrumented test, which will execute on an Android device.
