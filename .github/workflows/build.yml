@@ -15,6 +15,13 @@ jobs:
           text: ${{ github.event.head_commit.message }}
           regex: '^v[0-9]+\.[0-9]+\.[0-9]+$'
 
+      - name: Set Up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          cache: 'gradle'
+
       - name: Build APK
         id: build
         run: bash ./gradlew assembleRelease
@@ -50,6 +57,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APK
+        if: ${{ steps.regex-match.outputs.match != '' }}
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
