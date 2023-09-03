@@ -1,32 +1,26 @@
 name: Build
 on:
   push:
-    tags:
-      - 'v*'
+    branches:
+      - 'main'
 jobs:
   Build:
-    name: Build/Sign APK
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
-      - name: Access Api keys
-        env:
-          clientId: ${{ secrets.CLIENT_ID }}
-          clientSecret: ${{ secrets.CLIENT_SECRET }}
-          path: app/src/main/res/values/secrets.xml
-        run: |
-          touch $path
-          echo \<resources\> >> $path
-          echo \<string name=\"CLIENT_ID\"\>$clientId\</string\> >> $path
-          echo \<string name=\"CLIENT_SECRET\"\>$clientSecret\</string\> >> $path
-          echo \</resources\> >> $path
+      - uses: actions-ecosystem/action-regex-match@v2.0.2
+        id: regex-match
+        with:
+          text: ${{ github.event.head_commit.message }}
+          regex: '^v[0-9]+\.[0-9]+\.[0-9]+$'
 
       - name: Build APK
+        id: build
         run: bash ./gradlew assembleRelease
 
       - name: Sign APK
-        id: sign_app
+        id: sign_apk
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: app/build/outputs/apk/release
@@ -35,29 +29,25 @@ jobs:
           keyStorePassword: ${{ secrets.KEYSTOREPASSWORD }}
           keyPassword: ${{ secrets.KEYPASSWORD }}
 
-      - name: Rename APK
-        run: mv ${{steps.sign_app.outputs.signedReleaseFile}} app-release-signed.apk
-
-      - name: Make artifact
-        uses: actions/upload-artifact@v2
+      - name: Build Changelog
+        if: ${{ steps.regex-match.outputs.match != '' }}
+        id: changelog
+        uses: ardalanamini/auto-changelog@v3
         with:
-          name: app-release-signed
-          path: app-release-signed.apk
+          mention-authors: false
+          mention-new-contributors: false
+          include-compare: false
+          semver: false
 
-      - name: Create release
-        uses: actions/create-release@v1
+      - name: Create Release
+        if: ${{ steps.regex-match.outputs.match != '' }}
         id: create_release
+        uses: ncipollo/release-action@v1
         with:
-          draft: false
-          prerelease: false
-          release_name: Release ${{ github.ref }}
-          tag_name: ${{ github.ref }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-
-      - name: Get Tag
-        id: var
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
+          body: ${{ steps.changelog.outputs.changelog }}
+          tag: ${{ github.event.head_commit.message }}
+          name: Release ${{ github.event.head_commit.message }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload APK
         uses: actions/upload-release-asset@v1
@@ -65,6 +55,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: app-release-signed.apk
-          asset_name: spd-${{ steps.var.outputs.tag }}.apk
+          asset_path: ${{steps.sign_apk.outputs.signedReleaseFile}}
+          asset_name: app-release-signed-${{ github.event.head_commit.message }}.apk
           asset_content_type: application/zip
