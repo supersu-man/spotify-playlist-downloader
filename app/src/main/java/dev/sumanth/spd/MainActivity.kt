@@ -1,6 +1,7 @@
 package dev.sumanth.spd
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Configuration
@@ -9,6 +10,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.provider.Settings
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,7 +21,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,7 +35,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.supersuman.githubapkupdater.Updater
-import com.supersuman.spd.CustomClass
 import dev.sumanth.spd.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +60,6 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var spotifyApi: SpotifyApi
 
-    private val customClass = CustomClass()
     private val updater =
         Updater(this, "https://github.com/supersu-man/SpotifyPlaylistDownloader/releases/latest")
 
@@ -129,7 +128,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun downloadPlaylist(playListLink: String) = CoroutineScope(Dispatchers.IO).launch {
-        customClass.closeKeyboard(this@MainActivity)
+        closeKeyboard()
         toast("Fetching playlist")
         val spotifyList = getPlaylistItems(playListLink)
         toast("Successfully fetched playlist")
@@ -263,5 +262,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun closeKeyboard(){
+        val view = this.currentFocus
+        if (view != null) {
+            val imm: InputMethodManager = this.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            imm.hideSoftInputFromWindow(view.windowToken, 0)
+        }
+    }
 
 }
