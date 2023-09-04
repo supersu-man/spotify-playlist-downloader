@@ -146,7 +146,7 @@ class MainActivity : ComponentActivity() {
                 ).mkdir()
                 val path = File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    "spotify-playlist-downloader/$fileName"
+                    "spotify-playlist-downloader/${fileName.value}"
                 ).path
                 downloadFile(downloadLink, path) { b, c ->
                     songProgress.value = "${(b * 100 / c).toInt()}%"
