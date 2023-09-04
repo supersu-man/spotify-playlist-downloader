@@ -18,11 +18,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,7 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
-import com.supersuman.githubapkupdater.Updater
+import com.supersuman.apkupdater.ApkUpdater
 import dev.sumanth.spd.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -56,39 +58,63 @@ class MainActivity : ComponentActivity() {
     private val songProgress = mutableStateOf("")
     private val totalProgress = mutableStateOf("")
     private val fileName = mutableStateOf("")
+    private val updateFound = mutableStateOf(false)
 
     private lateinit var spotifyApi: SpotifyApi
 
-    private val updater =
-        Updater(this, "https://github.com/supersu-man/SpotifyPlaylistDownloader/releases/latest")
-
+    private lateinit var updater: ApkUpdater
+    private val url = "https://github.com/supersu-man/spotify-playlist-downloader/releases/latest"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         setupSpotify()
+        checkForUpdates()
         NewPipe.init(Downloader.getInstance())
         if (!checkForPermissions()) askForPermissions()
 
-        setContent {
-            somFun()
-        }
+        setContent { App() }
     }
 
+    private fun checkForUpdates() = CoroutineScope(Dispatchers.IO).launch {
+        updater = ApkUpdater(this@MainActivity, url)
+        updater.threeNumbers = true
+        if (updater.isInternetConnection() && updater.isNewUpdateAvailable() == true) {
+            updateFound.value = true
+        }
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     @Preview(
         uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, name = "Dark Mode"
     )
     @Composable
-    fun somFun() {
+    fun App() {
         val songProgress by songProgress
         val totalProgress by totalProgress
         val fileName by fileName
         var playListLink by rememberSaveable { mutableStateOf("") }
+        var openAlertDialog by updateFound
 
         AppTheme {
             Surface {
+                if (openAlertDialog) {
+                    AlertDialog(
+                        title = { Text("New update found") },
+                        text = { Text(text = "Would you like to download new apk?") },
+                        onDismissRequest = { openAlertDialog = false },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    updater.requestDownload()
+                                }
+                                openAlertDialog = false
+                            }) {
+                                Text(text = "Download")
+                            }
+                        }
+                    )
+                }
                 Column(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
@@ -261,10 +287,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun closeKeyboard(){
+    private fun closeKeyboard() {
         val view = this.currentFocus
         if (view != null) {
-            val imm: InputMethodManager = this.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+            val imm: InputMethodManager =
+                this.getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
             imm.hideSoftInputFromWindow(view.windowToken, 0)
         }
     }

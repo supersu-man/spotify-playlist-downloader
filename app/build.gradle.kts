@@ -11,9 +11,8 @@ android {
         applicationId = "dev.sumanth.spd"
         minSdk = 24
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
-
+        versionCode = 12
+        versionName = "1.6.6"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -49,7 +48,7 @@ android {
 dependencies {
     implementation("com.squareup.okhttp3:okhttp-urlconnection:5.0.0-alpha.3")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.3")
-    implementation("com.github.supersu-man:GitHubAPKUpdater-Library:v1.5")
+    implementation("com.github.supersu-man:apkupdater-library:v2.0.1")
     implementation("se.michaelthelin.spotify:spotify-web-api-java:8.0.0")
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.22.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
