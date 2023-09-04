@@ -1,4 +1,4 @@
-package com.supersuman.spd.ui.theme
+package dev.sumanth.spd.ui.theme
 
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle

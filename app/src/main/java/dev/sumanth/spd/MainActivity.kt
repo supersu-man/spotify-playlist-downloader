@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,7 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
 import com.supersuman.githubapkupdater.Updater
 import com.supersuman.spd.CustomClass
-import com.supersuman.spd.ui.theme.AppTheme
+import dev.sumanth.spd.ui.theme.AppTheme
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -89,33 +90,31 @@ class MainActivity : ComponentActivity() {
         var playListLink by rememberSaveable { mutableStateOf("") }
 
         AppTheme {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                OutlinedTextField(
-                    value = playListLink,
-                    onValueChange = { playListLink = it },
-                    label = { Text("Playlist link") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(30.dp)
-                )
-                Surface {
+            Surface {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    OutlinedTextField(
+                        value = playListLink,
+                        onValueChange = { playListLink = it },
+                        label = { Text("Playlist link") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(30.dp)
+                    )
                     Text(
                         text = "$fileName $songProgress",
                         modifier = Modifier.padding(10.dp)
                     )
-                }
-                Surface {
                     Text(
                         text = totalProgress,
                         modifier = Modifier.padding(10.dp)
                     )
-                }
-                Button(onClick = { downloadPlaylist(playListLink) }) {
-                    Text(text = "Download")
+                    Button(onClick = { downloadPlaylist(playListLink) }) {
+                        Text(text = "Download")
+                    }
                 }
             }
         }

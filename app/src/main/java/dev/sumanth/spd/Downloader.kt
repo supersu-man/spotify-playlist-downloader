@@ -2,6 +2,7 @@ package dev.sumanth.spd
 
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.ResponseBody
 import org.schabi.newpipe.extractor.downloader.Downloader
 import org.schabi.newpipe.extractor.downloader.Request
@@ -25,7 +26,7 @@ class Downloader private constructor(builder: OkHttpClient.Builder) : Downloader
         val dataToSend = request.dataToSend()
         var requestBody: RequestBody? = null
         if (dataToSend != null) {
-            requestBody = RequestBody.create(null, dataToSend)
+            requestBody = dataToSend.toRequestBody()
         }
         val requestBuilder: okhttp3.Request.Builder = okhttp3.Request.Builder().method(httpMethod, requestBody).url(url).addHeader("User-Agent", USER_AGENT)
         for ((headerName, headerValueList) in headers) {

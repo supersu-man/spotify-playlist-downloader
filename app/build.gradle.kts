@@ -50,18 +50,12 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp-urlconnection:5.0.0-alpha.3")
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.3")
     implementation("com.github.supersu-man:GitHubAPKUpdater-Library:v1.5")
-
     implementation("se.michaelthelin.spotify:spotify-web-api-java:8.0.0")
-    implementation("androidx.core:core-ktx:1.10.1")
-    implementation("androidx.activity:activity-ktx:1.7.2")
-    implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("com.google.android.material:material:1.11.0-alpha02")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.22.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
-    testImplementation("org.robolectric:robolectric:4.10.3")
-
-
+    implementation("com.google.android.material:material:1.11.0-alpha02")
+    implementation("androidx.core:core-ktx:1.10.1")
     implementation("androidx.activity:activity-compose:1.7.2")
     implementation(platform("androidx.compose:compose-bom:2023.03.00"))
     implementation("androidx.compose.ui:ui")
