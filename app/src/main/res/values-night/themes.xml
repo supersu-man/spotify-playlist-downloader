@@ -1,7 +1,9 @@
 <resources>
 
-    <style name="Theme.SpotifyPlaylistDownloader" parent="Theme.Material3.Dark.NoActionBar">
+    <style name="Theme.SpotifyPlaylistDownloader" parent="Theme.MaterialComponents.NoActionBar">
         <item name="colorPrimary">@color/md_theme_dark_primary</item>
         <item name="android:colorBackground">@color/md_theme_dark_background</item>
+        <item name="android:statusBarColor" >@color/md_theme_dark_primary</item>
+        <item name="android:navigationBarColor">@color/md_theme_dark_background</item>
     </style>
 </resources>
