@@ -11,7 +11,7 @@ This app uses apis listed below.
 - Downloads music from Spotify playlist link
 
 # Dependencies / Tools used
-- [Youtube DL](https://github.com/yausername/youtubedl-android)
+- [New Pipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor)
 - [Spotify Web Api Java](https://github.com/thelinmichael/spotify-web-api-java)
 - [Okhttp](https://square.github.io/okhttp/)
 - [YouTube Music](https://music.youtube.com/)
