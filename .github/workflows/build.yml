@@ -38,13 +38,18 @@ jobs:
         id: build
         run: bash ./gradlew assembleRelease
 
-      - name: Sign APK
-        id: sign_apk
-        uses: r0adkll/sign-android-release@v1
+      - name: Move APK
+        if: ${{ steps.regex-match.outputs.match != '' }}
+        run: mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/app-release.apk
+
+      - name: Sign App
+        if: ${{ steps.regex-match.outputs.match != '' }}
+        id: sign_app
+        uses: ilharp/sign-android-release@v1.0.4
         with:
-          releaseDirectory: app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.SIGNINGKEYBASE64 }}
-          alias: ${{ secrets.ALIAS }}
+          releaseDir: app/build/outputs
+          signingKey: ${{ secrets.SIGNINGKEYBASE64 }}
+          keyAlias: ${{ secrets.ALIAS }}
           keyStorePassword: ${{ secrets.KEYSTOREPASSWORD }}
           keyPassword: ${{ secrets.KEYPASSWORD }}
 
@@ -61,20 +66,10 @@ jobs:
       - name: Create Release
         if: ${{ steps.regex-match.outputs.match != '' }}
         id: create_release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.13.0
         with:
+          artifacts: "app/build/outputs/app-release-signed.apk"
           body: ${{ steps.changelog.outputs.changelog }}
           tag: ${{ github.event.head_commit.message }}
           name: Release ${{ github.event.head_commit.message }}
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload APK
-        if: ${{ steps.regex-match.outputs.match != '' }}
-        uses: actions/upload-release-asset@v1
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        with:
-          upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ${{steps.sign_apk.outputs.signedReleaseFile}}
-          asset_name: app-release-signed-${{ github.event.head_commit.message }}.apk
-          asset_content_type: application/zip
