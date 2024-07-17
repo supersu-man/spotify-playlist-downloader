@@ -7,16 +7,16 @@ jobs:
   Build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - uses: actions-ecosystem/action-regex-match@v2.0.2
+      - uses: kaisugi/action-regex-match@v1.0.1
         id: regex-match
         with:
           text: ${{ github.event.head_commit.message }}
           regex: '^v[0-9]+\.[0-9]+\.[0-9]+$'
 
       - name: Setup JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -34,11 +34,11 @@ jobs:
           echo \<string name=\"CLIENT_SECRET\"\>$clientSecret\</string\> >> $path
           echo \</resources\> >> $path
 
-      - name: Build APK
+      - name: Build App
         id: build
         run: bash ./gradlew assembleRelease
 
-      - name: Move APK
+      - name: Move files
         if: ${{ steps.regex-match.outputs.match != '' }}
         run: mv app/build/outputs/apk/release/app-release-unsigned.apk app/build/outputs/app-release.apk
 
