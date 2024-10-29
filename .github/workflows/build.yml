@@ -56,7 +56,7 @@ jobs:
       - name: Build Changelog
         if: ${{ steps.regex-match.outputs.match != '' }}
         id: changelog
-        uses: ardalanamini/auto-changelog@v3
+        uses: ardalanamini/auto-changelog@v4
         with:
           mention-authors: false
           mention-new-contributors: false
