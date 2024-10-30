@@ -49,7 +49,8 @@ import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQu
 import se.michaelthelin.spotify.SpotifyApi
 import se.michaelthelin.spotify.model_objects.specification.Paging
 import se.michaelthelin.spotify.model_objects.specification.PlaylistTrack
-import java.io.*
+import java.io.File
+import java.io.FileOutputStream
 import java.net.HttpURLConnection
 
 
@@ -64,6 +65,8 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var updater: ApkUpdater
     private val url = "https://github.com/supersu-man/spotify-playlist-downloader/releases/latest"
+
+    private val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path + "/spotify-playlist-downloader"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -84,10 +87,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Preview(
-        uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, name = "Dark Mode"
-    )
+    @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, name = "Dark Mode")
     @Composable
     fun App() {
         val songProgress by songProgress
@@ -139,9 +139,19 @@ class MainActivity : ComponentActivity() {
                     Button(onClick = { downloadPlaylist(playListLink) }) {
                         Text(text = "Download")
                     }
+                    Button(onClick = { openFolder() }) {
+                        Text(text = "Show downloads")
+                    }
                 }
             }
         }
+    }
+
+    private fun openFolder() {
+        val intent = Intent(Intent.ACTION_VIEW)
+        val uri = Uri.parse(downloadsFolder)
+        intent.setDataAndType(uri, "resource/folder")
+        startActivity(intent)
     }
 
     private fun setupSpotify() = CoroutineScope(Dispatchers.IO).launch {
@@ -164,14 +174,8 @@ class MainActivity : ComponentActivity() {
             try {
                 val downloadLink = getDownloadLink(spotifyList[queryNumber])
                 println(downloadLink)
-                File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    "spotify-playlist-downloader"
-                ).mkdir()
-                val path = File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                    "spotify-playlist-downloader/${fileName.value}"
-                ).path
+                File(downloadsFolder).mkdir()
+                val path = File("$downloadsFolder/${fileName.value}").path
                 downloadFile(downloadLink, path) { b, c ->
                     songProgress.value = "${(b * 100 / c).toInt()}%"
                 }
