@@ -15,23 +15,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
@@ -56,8 +53,7 @@ import java.net.HttpURLConnection
 
 class MainActivity : ComponentActivity() {
 
-    private val songProgress = mutableStateOf("")
-    private val totalProgress = mutableStateOf("")
+    private val totalProgress = mutableFloatStateOf(0f)
     private val fileName = mutableStateOf("")
     private val updateFound = mutableStateOf(false)
 
@@ -87,62 +83,25 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Preview(uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true, name = "Dark Mode")
     @Composable
     fun App() {
-        val songProgress by songProgress
         val totalProgress by totalProgress
         val fileName by fileName
         var playListLink by rememberSaveable { mutableStateOf("") }
         var openAlertDialog by updateFound
 
-        AppTheme {
-            Surface {
-                if (openAlertDialog) {
-                    AlertDialog(
-                        title = { Text("New update found") },
-                        text = { Text(text = "Would you like to download new apk?") },
-                        onDismissRequest = { openAlertDialog = false },
-                        confirmButton = {
-                            TextButton(onClick = {
-                                CoroutineScope(Dispatchers.IO).launch {
-                                    updater.requestDownload()
-                                }
-                                openAlertDialog = false
-                            }) {
-                                Text(text = "Download")
-                            }
-                        }
-                    )
-                }
-                Column(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    OutlinedTextField(
-                        value = playListLink,
-                        onValueChange = { playListLink = it },
-                        label = { Text("Playlist link") },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(30.dp)
-                    )
-                    Text(
-                        text = "$fileName $songProgress",
-                        modifier = Modifier.padding(10.dp)
-                    )
-                    Text(
-                        text = totalProgress,
-                        modifier = Modifier.padding(10.dp)
-                    )
-                    Button(onClick = { downloadPlaylist(playListLink) }) {
-                        Text(text = "Download")
-                    }
-                    Button(onClick = { openFolder() }) {
-                        Text(text = "Show downloads")
-                    }
-                }
+        Background {
+            if (openAlertDialog) {
+                UpdateDialog(updater = updater) { openAlertDialog = false }
+            }
+            TextInput(playListLink = playListLink) { playListLink = it }
+            if (fileName != "") {
+                Text(text = "Downloading $fileName", modifier = Modifier.padding(10.dp), textAlign = TextAlign.Center)
+                ProgressIndicator(currentProgress = totalProgress, text = String.format("%.1f", totalProgress*100) + "%")
+            }
+            Row {
+                Button(text = "Download") { downloadPlaylist(playListLink) }
+                Button(text = "Show downloads") { openFolder() }
             }
         }
     }
@@ -173,29 +132,26 @@ class MainActivity : ComponentActivity() {
         while (queryNumber < spotifyList.size) {
             try {
                 val downloadLink = getDownloadLink(spotifyList[queryNumber])
-                println(downloadLink)
                 File(downloadsFolder).mkdir()
                 val path = File("$downloadsFolder/${fileName.value}").path
                 downloadFile(downloadLink, path) { b, c ->
-                    songProgress.value = "${(b * 100 / c).toInt()}%"
+//                    songProgress.floatValue = (b * 100 / c).toFloat()
                 }
                 queryNumber++
                 retries = 5
-                totalProgress.value = "$queryNumber/${spotifyList.size}"
-                println(totalProgress.value)
+                totalProgress.floatValue = (queryNumber.toFloat()/spotifyList.size)
             } catch (e: Exception) {
                 if (retries == 0) {
                     queryNumber++
                     retries = 5
-                    totalProgress.value = "$queryNumber/${spotifyList.size}"
+                    totalProgress.floatValue = (queryNumber.toFloat()/spotifyList.size)
                 } else {
                     retries--
                 }
                 println(e)
             }
-
+            println(queryNumber.toFloat()/spotifyList.size)
         }
-
     }
 
     private fun getPlaylistItems(link: String): MutableList<String> {
@@ -245,7 +201,6 @@ class MainActivity : ComponentActivity() {
         val responseCode = response.code
         println(responseCode)
         if (responseCode >= HttpURLConnection.HTTP_OK && responseCode < HttpURLConnection.HTTP_MULT_CHOICE && body != null) {
-            println("test3")
             val length = body.contentLength()
             body.byteStream().apply {
                 FileOutputStream(File(path)).use { output ->
