@@ -53,9 +53,11 @@ import java.net.HttpURLConnection
 
 class MainActivity : ComponentActivity() {
 
+    private val updateFound = mutableStateOf(false)
+    private val needPermissions = mutableStateOf(false)
+
     private val totalProgress = mutableFloatStateOf(0f)
     private val fileName = mutableStateOf("")
-    private val updateFound = mutableStateOf(false)
 
     private lateinit var spotifyApi: SpotifyApi
 
@@ -70,7 +72,7 @@ class MainActivity : ComponentActivity() {
         setupSpotify()
         checkForUpdates()
         NewPipe.init(Downloader.getInstance())
-        if (!checkForPermissions()) askForPermissions()
+        needPermissions.value = !isPermissionsPresent()
 
         setContent { App() }
     }
@@ -89,8 +91,15 @@ class MainActivity : ComponentActivity() {
         val fileName by fileName
         var playListLink by rememberSaveable { mutableStateOf("") }
         var openAlertDialog by updateFound
+        var openPermissionDialog by needPermissions
 
         Background {
+            if (openPermissionDialog) {
+                PermissionDialog {
+                    askForPermissions()
+                    openPermissionDialog = false
+                }
+            }
             if (openAlertDialog) {
                 UpdateDialog(updater = updater) { openAlertDialog = false }
             }
@@ -230,7 +239,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun checkForPermissions(): Boolean {
+    private fun isPermissionsPresent(): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             Environment.isExternalStorageManager()
         } else {

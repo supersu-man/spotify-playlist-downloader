@@ -40,7 +40,6 @@ fun UpdateDialog(updater: ApkUpdater, close: () -> Unit) {
             }
         }
     )
-
 }
 
 @Composable
@@ -83,4 +82,18 @@ fun Background (callback: @Composable () -> Unit) {
             }
         }
     }
+}
+
+@Composable
+fun PermissionDialog(close: () -> Unit) {
+    AlertDialog(
+        title = { Text("Permission required") },
+        text = { Text(text = "Need permission to download files to Download folder") },
+        onDismissRequest = { close() },
+        confirmButton = {
+            TextButton(onClick = { close() }) {
+                Text(text = "Ok")
+            }
+        }
+    )
 }
