@@ -6,8 +6,8 @@
     <color name="md_theme_dark_primary">#FFB68A</color>
     <color name="md_theme_dark_background">#201A17</color>
 
-    <style name="Theme.SpotifyPlaylistDownloader" parent="Theme.MaterialComponents.NoActionBar">
-        <item name="colorPrimary">@color/md_theme_light_primary</item>
+    <style name="Theme.SpotifyPlaylistDownloader" parent="android:Theme.Material.NoActionBar">
+        <item name="android:colorPrimary">@color/md_theme_light_primary</item>
         <item name="android:colorBackground">@color/md_theme_light_background</item>
         <item name="android:statusBarColor">@color/md_theme_light_primary</item>
         <item name="android:navigationBarColor">@color/md_theme_light_background</item>
