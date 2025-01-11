@@ -1,4 +1,4 @@
-package dev.sumanth.spd
+package dev.sumanth.spd.utils
 
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
