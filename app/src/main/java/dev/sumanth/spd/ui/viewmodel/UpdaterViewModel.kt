@@ -18,13 +18,11 @@ class UpdaterViewModel(activity: Activity, url: String): ViewModel() {
         checkForUpdate(activity, url)
     }
 
-    private fun checkForUpdate(activity: Activity, url: String) {
-        viewModelScope.launch(Dispatchers.IO) {
-            updater = ApkUpdater(activity, url)
-            updater.threeNumbers = true
-            if (updater.isInternetConnection() && updater.isNewUpdateAvailable() == true) {
-                updateFound = true
-            }
+    private fun checkForUpdate(activity: Activity, url: String) = viewModelScope.launch(Dispatchers.IO) {
+        updater = ApkUpdater(activity, url)
+        updater.threeNumbers = true
+        if (updater.isInternetConnection() && updater.isNewUpdateAvailable() == true) {
+            updateFound = true
         }
     }
 

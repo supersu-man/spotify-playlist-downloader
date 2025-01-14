@@ -3,6 +3,7 @@ package dev.sumanth.spd.ui.screen
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -21,7 +22,7 @@ import dev.sumanth.spd.ui.viewmodel.HomeScreenViewModel
 
 @Composable
 fun HomeScreen(viewModel: HomeScreenViewModel) {
-    Column(modifier = Modifier.padding(10.dp, 20.dp)) {
+    Column(modifier = Modifier.padding(10.dp, 20.dp).fillMaxSize()) {
         Text("Enter Playlist Link")
         OutlinedTextField(
             value = viewModel.spotifyLink, onValueChange = { viewModel.spotifyLink = it },

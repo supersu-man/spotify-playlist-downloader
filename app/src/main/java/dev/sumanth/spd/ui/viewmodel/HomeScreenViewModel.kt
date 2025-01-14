@@ -1,5 +1,6 @@
 package dev.sumanth.spd.ui.viewmodel
 
+import android.app.Activity.MODE_PRIVATE
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -9,6 +10,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import dev.sumanth.spd.model.defaultDownloadPath
+import dev.sumanth.spd.model.downloadPath
+import dev.sumanth.spd.model.download_path_key
 import dev.sumanth.spd.utils.spotify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -26,7 +30,6 @@ import java.net.HttpURLConnection
 
 class HomeScreenViewModel: ViewModel() {
 
-    private val downloadsFolder = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS).path + "/spotify-playlist-downloader"
     var fileProgress by mutableFloatStateOf(0f)
     var totalProgress by mutableFloatStateOf(0f)
     var fileName by  mutableStateOf("")
@@ -43,9 +46,9 @@ class HomeScreenViewModel: ViewModel() {
         while (queryNumber < spotifyList.size) {
             try {
                 val fileMeta = getFileMeta(spotifyList[queryNumber])
-                File(downloadsFolder).mkdir()
+                File(downloadPath).mkdir()
                 fileName = "Downloading " + fileMeta["filename"].toString()
-                val path = File("$downloadsFolder/${fileMeta["filename"]}").path
+                val path = File("$downloadPath/${fileMeta["filename"]}").path
                 downloadFile(fileMeta["url"].toString(), path) { b, c ->
                     fileProgress = (b * 100 / c).toFloat() / 100
                 }
@@ -64,14 +67,6 @@ class HomeScreenViewModel: ViewModel() {
             println(totalProgress)
         }
         loader = false
-    }
-
-
-    fun openFolder(context: Context) {
-        val intent = Intent(Intent.ACTION_VIEW)
-        val uri = Uri.parse(downloadsFolder)
-        intent.setDataAndType(uri, "resource/folder")
-        context.startActivity(intent)
     }
 
 }
