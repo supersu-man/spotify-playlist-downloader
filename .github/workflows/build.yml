@@ -58,6 +58,7 @@ jobs:
         id: changelog
         uses: ardalanamini/auto-changelog@v4
         with:
+          buildToolsVersion: 35.0.0
           mention-authors: false
           mention-new-contributors: false
           include-compare: false
