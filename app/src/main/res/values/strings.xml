@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Spotify Playlist Downloader</string>
+    <string name="update_url">https://github.com/supersu-man/spotify-playlist-downloader/releases/latest</string>
 </resources>

@@ -4,7 +4,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.sumanth.spd.ui.viewmodel.UpdaterViewModel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,8 +18,9 @@ fun UpdateDialog(updaterViewModel: UpdaterViewModel) {
         onDismissRequest = { updaterViewModel.updateFound = false },
         confirmButton = {
             TextButton(onClick = {
+                println(updaterViewModel.updater == null)
                 CoroutineScope(Dispatchers.IO).launch {
-                    updaterViewModel.updater.requestDownload()
+                    updaterViewModel.updater?.requestDownload()
                 }
                 updaterViewModel.updateFound = false
             }) {
