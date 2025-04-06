@@ -47,6 +47,7 @@ jobs:
         id: sign_app
         uses: ilharp/sign-android-release@v1.0.4
         with:
+          buildToolsVersion: 35.0.0
           releaseDir: app/build/outputs
           signingKey: ${{ secrets.SIGNINGKEYBASE64 }}
           keyAlias: ${{ secrets.ALIAS }}
@@ -58,7 +59,6 @@ jobs:
         id: changelog
         uses: ardalanamini/auto-changelog@v4
         with:
-          buildToolsVersion: 35.0.0
           mention-authors: false
           mention-new-contributors: false
           include-compare: false
