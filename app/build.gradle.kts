@@ -55,7 +55,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.14")
     implementation("com.github.supersu-man:apkupdater-library:v2.0.1")
     implementation("se.michaelthelin.spotify:spotify-web-api-java:8.0.0")
-    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.24.4")
+    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.24.6")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
 
