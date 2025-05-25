@@ -12,8 +12,8 @@ android {
         applicationId = "dev.sumanth.spd"
         minSdk = 24
         targetSdk = 35
-        versionCode = 17
-        versionName = "1.7.3"
+        versionCode = 18
+        versionName = "1.7.4"
     }
 
     buildTypes {
@@ -57,6 +57,6 @@ dependencies {
     implementation("se.michaelthelin.spotify:spotify-web-api-java:8.0.0")
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.24.6")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-
+    implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
+    implementation("com.arthenica:smart-exception-java:0.2.1")
 }
