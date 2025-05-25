@@ -1,5 +1,10 @@
 package dev.sumanth.spd.utils
 
+import android.content.Context
+import com.arthenica.ffmpegkit.FFmpegKit
+import com.arthenica.ffmpegkit.FFmpegKitConfig
+import com.arthenica.ffmpegkit.Level
+import com.arthenica.ffmpegkit.ReturnCode
 import okhttp3.OkHttpClient
 import okhttp3.RequestBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -120,7 +125,7 @@ fun getFileMeta(text: String): HashMap<String, String> {
     extractor.fetchPage()
     extractor.audioStreams.sortByDescending { it.bitrate }
     val url = extractor.audioStreams[0].content
-    return hashMapOf("url" to url, "filename" to "${extractor.name}.${extractor.audioStreams[0].format}")
+    return hashMapOf("url" to url, "name" to extractor.name)
 }
 
 fun downloadFile(link: String, path: String, progress: ((Long, Long) -> Unit)? = null) {
@@ -143,5 +148,23 @@ fun downloadFile(link: String, path: String, progress: ((Long, Long) -> Unit)? =
                 }
             }
         }
+    }
+}
+
+fun convertCodec(filePath: String) {
+    val inputPath = "$filePath.m4a"
+    val outputPath = "$filePath.mp3"
+    val command = "-i \"$inputPath\" -c:v copy -c:a libmp3lame -q:a 4 \"$outputPath\""
+
+    FFmpegKitConfig.setLogLevel(Level.AV_LOG_QUIET)
+    println("FFmpeg Command: $command")
+
+    val session = FFmpegKit.execute(command)
+
+    if (ReturnCode.isSuccess(session.returnCode)) {
+        File(inputPath).delete()
+    } else {
+        println("Error converting file: ${session.returnCode}")
+        println("Logs: ${session.allLogsAsString}")
     }
 }

@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import dev.sumanth.spd.utils.SharedPref
+import dev.sumanth.spd.utils.convertCodec
 import dev.sumanth.spd.utils.downloadFile
 import dev.sumanth.spd.utils.getFileMeta
 import dev.sumanth.spd.utils.getPlaylistItems
@@ -21,6 +22,7 @@ class HomeScreenViewModel(current: Context) : ViewModel() {
     var spotifyLink = mutableStateOf("")
     var loader = mutableStateOf(false)
     val sharedPref = mutableStateOf(SharedPref(current))
+    val convertToMp3 = mutableStateOf(false)
 
     fun downloadPlaylist() = CoroutineScope(Dispatchers.IO).launch {
         loader.value = true
@@ -34,15 +36,19 @@ class HomeScreenViewModel(current: Context) : ViewModel() {
             try {
                 val fileMeta = getFileMeta(spotifyList[queryNumber])
                 File(downloadPath).mkdir()
-                fileName.value = "Downloading " + fileMeta["filename"].toString()
-                val path = File("$downloadPath/${fileMeta["filename"]}").path
-                downloadFile(fileMeta["url"].toString(), path) { b, c ->
+                fileName.value = "Downloading " + fileMeta["name"].toString()
+                val path = "$downloadPath/${fileMeta["name"]}"
+                downloadFile(fileMeta["url"].toString(), "$path.m4a") { b, c ->
                     fileProgress.floatValue = (b * 100 / c).toFloat() / 100
+                }
+                if(convertToMp3.value) {
+                    convertCodec(path)
                 }
                 queryNumber++
                 retries = 5
                 totalProgress.floatValue = (queryNumber.toFloat()/spotifyList.size)
             } catch (e: Exception) {
+                println(e)
                 if (retries == 0) {
                     queryNumber++
                     retries = 5

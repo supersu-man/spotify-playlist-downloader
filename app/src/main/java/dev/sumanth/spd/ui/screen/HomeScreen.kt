@@ -1,6 +1,8 @@
 package dev.sumanth.spd.ui.screen
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,11 +15,13 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
@@ -36,6 +40,10 @@ fun HomeScreen() {
             label = { Text("Paste playlist link here") },
             modifier = Modifier.fillMaxWidth().padding(0.dp, 5.dp), minLines = 3
         )
+        Row(modifier = Modifier.padding(0.dp, 5.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+            Text("Convert to MP3")
+            Switch(checked = homeScreenViewModel.convertToMp3.value, onCheckedChange = { homeScreenViewModel.convertToMp3.value = it })
+        }
         Button (onClick = { homeScreenViewModel.downloadPlaylist() }, modifier = Modifier.padding(0.dp, 5.dp).fillMaxWidth().height(40.dp)) {
             if(homeScreenViewModel.loader.value) {
                 CircularProgressIndicator(modifier = Modifier.fillMaxHeight().aspectRatio(1f), color = MaterialTheme.colorScheme.onPrimary)
