@@ -54,7 +54,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp-urlconnection:5.1.0")
     implementation("com.squareup.okhttp3:okhttp:5.1.0")
     implementation("com.github.supersu-man:apkupdater-library:v2.0.1")
-    implementation("se.michaelthelin.spotify:spotify-web-api-java:8.0.0")
+    implementation("se.michaelthelin.spotify:spotify-web-api-java:9.3.0")
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.24.8")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
