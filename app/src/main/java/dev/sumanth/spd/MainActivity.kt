@@ -18,6 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import dev.sumanth.spd.model.NavigationItem
 import dev.sumanth.spd.ui.component.Background
@@ -28,11 +29,11 @@ import dev.sumanth.spd.ui.component.UpdateDialog
 import dev.sumanth.spd.ui.screen.HomeScreen
 import dev.sumanth.spd.ui.screen.PreferencesScreen
 import dev.sumanth.spd.ui.viewmodel.UpdaterViewModel
-import dev.sumanth.spd.utils.Downloader
-import dev.sumanth.spd.utils.Spotify
+import dev.sumanth.spd.utils.NewPipeDownloader
+import dev.sumanth.spd.utils.SpotifyManager
 import dev.sumanth.spd.utils.spotify
+import kotlinx.coroutines.launch
 import org.schabi.newpipe.extractor.NewPipe
-
 
 class MainActivity : ComponentActivity() {
 
@@ -47,19 +48,35 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        spotify = Spotify(this)
-        NewPipe.init(Downloader.getInstance())
+        NewPipe.init(NewPipeDownloader.getInstance())
         updateViewModel.checkForUpdate(this)
 
         setContent {
-            val pagerState = rememberPagerState( pageCount = { navigationItems.size })
-            val title by remember { derivedStateOf { navigationItems[pagerState.currentPage].title } }
+            val scope = rememberCoroutineScope()
+            remember {
+                scope.launch {
+                    spotify = SpotifyManager(this@MainActivity)
+                    spotify.init()
+                }
+            }
+
+            val pagerState = rememberPagerState(pageCount = { navigationItems.size })
+            val title by remember {
+                derivedStateOf { navigationItems[pagerState.currentPage].title }
+            }
 
             Background {
-                Scaffold(topBar = { TopBar(title) }, bottomBar = { BottomBar(navigationItems, pagerState) }) { innerpadding ->
-                    HorizontalPager(state = pagerState,
-                        modifier = Modifier.fillMaxSize().padding(innerpadding)) { page ->
-                        when(page) {
+                Scaffold(
+                    topBar = { TopBar(title) },
+                    bottomBar = { BottomBar(navigationItems, pagerState) }
+                ) { innerPadding ->
+                    HorizontalPager(
+                        state = pagerState,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(innerPadding)
+                    ) { page ->
+                        when (page) {
                             0 -> HomeScreen()
                             1 -> PreferencesScreen()
                         }
@@ -69,8 +86,6 @@ class MainActivity : ComponentActivity() {
                     UpdateDialog(updateViewModel)
                 }
             }
-
         }
     }
-
 }

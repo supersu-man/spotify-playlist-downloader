@@ -6,13 +6,9 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.sumanth.spd.utils.DownloadManager
 import dev.sumanth.spd.utils.SharedPref
-import dev.sumanth.spd.utils.convertCodec
-import dev.sumanth.spd.utils.downloadFile
-import dev.sumanth.spd.utils.getFileMeta
-import dev.sumanth.spd.utils.getPlaylistItems
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -28,6 +24,10 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
     var convertToMp3 by mutableStateOf(false)
     private val sharedPref = SharedPref(application)
 
+    private fun sanitizeFilename(name: String): String {
+        return name.replace(Regex("[\\\\/:*?\"<>|]"), "_")
+    }
+
     fun downloadPlaylist() {
         if (loader) return
         viewModelScope.launch {
@@ -35,7 +35,10 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 val downloadPath = sharedPref.getDownloadPath()
                 fileName = "Fetching playlist..."
-                val spotifyList = withContext(Dispatchers.IO) { getPlaylistItems(spotifyLink) }
+                val spotifyList = withContext(Dispatchers.IO) {
+                    DownloadManager.getPlaylistItems(spotifyLink)
+                }
+
                 if (spotifyList.isEmpty()) {
                     fileName = "Playlist is empty or link is invalid"
                     loader = false
@@ -45,19 +48,20 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
 
                 spotifyList.forEachIndexed { index, item ->
                     try {
-                        val fileMeta = withContext(Dispatchers.IO) { getFileMeta(item) }
+                        val fileMeta = withContext(Dispatchers.IO) {
+                            DownloadManager.getFileMeta(item)
+                        }
                         withContext(Dispatchers.IO) { File(downloadPath).mkdirs() }
 
-                        val name = fileMeta["name"].toString()
-                        fileName = "Downloading $name"
-                        val path = "$downloadPath/$name"
+                        fileName = "Downloading ${item.name}"
+                        val path = "$downloadPath/${sanitizeFilename(item.name)}"
 
                         withContext(Dispatchers.IO) {
-                            downloadFile(fileMeta["url"].toString(), "$path.m4a") { b, c ->
+                            DownloadManager.downloadFile(fileMeta.url, "$path.${fileMeta.extention}") { b, c ->
                                 fileProgress = (b * 100 / c).toFloat() / 100
                             }
                             if (convertToMp3) {
-                                convertCodec(path)
+                                DownloadManager.convertToMp3(path, fileMeta.extention)
                             }
                         }
                         totalProgress = (index + 1).toFloat() / spotifyList.size
@@ -72,6 +76,4 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
             }
         }
     }
-
 }
-

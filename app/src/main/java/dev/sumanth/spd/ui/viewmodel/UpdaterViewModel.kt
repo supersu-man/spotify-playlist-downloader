@@ -1,8 +1,6 @@
 package dev.sumanth.spd.ui.viewmodel
 
 import android.app.Activity
-import android.content.Context
-import androidx.activity.result.launch
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue

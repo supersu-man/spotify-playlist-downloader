@@ -2,27 +2,26 @@ package dev.sumanth.spd.utils
 
 import android.content.Context
 import dev.sumanth.spd.R
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import se.michaelthelin.spotify.SpotifyApi
 
-lateinit var spotify: Spotify
+lateinit var spotify: SpotifyManager
 
-class Spotify(context: Context) {
+class SpotifyManager(private val context: Context) {
 
-    lateinit var spotifyApi: SpotifyApi
+    var spotifyApi: SpotifyApi = SpotifyApi.Builder()
+        .setClientId(context.getString(R.string.CLIENT_ID))
+        .setClientSecret(context.getString(R.string.CLIENT_SECRET))
+        .build()
+        private set
 
-    init {
-        setupSpotify(context)
-    }
-
-    private fun setupSpotify(context: Context) = CoroutineScope(Dispatchers.IO).launch {
-        spotifyApi = SpotifyApi.Builder()
-            .setClientId(context.getString(R.string.CLIENT_ID))
-            .setClientSecret(context.getString(R.string.CLIENT_SECRET)).build()
-        val clientCredentialsRequest = spotifyApi.clientCredentials().build()
-        val clientCredentials = clientCredentialsRequest.execute()
-        spotifyApi.accessToken = clientCredentials.accessToken
+    suspend fun init() = withContext(Dispatchers.IO) {
+        try {
+            val clientCredentials = spotifyApi.clientCredentials().build().execute()
+            spotifyApi.accessToken = clientCredentials.accessToken
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

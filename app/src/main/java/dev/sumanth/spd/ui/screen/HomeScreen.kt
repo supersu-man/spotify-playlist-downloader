@@ -51,9 +51,7 @@ fun HomeScreen(viewModel: HomeScreenViewModel = viewModel()) {
         ) {
             if (viewModel.loader) {
                 CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    strokeWidth = 2.dp
+                    modifier = Modifier.size(24.dp)
                 )
             } else {
                 Text("Download Playlist")

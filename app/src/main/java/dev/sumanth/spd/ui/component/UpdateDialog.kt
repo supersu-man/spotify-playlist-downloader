@@ -4,27 +4,34 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewModelScope
 import dev.sumanth.spd.ui.viewmodel.UpdaterViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 @Composable
 fun UpdateDialog(updaterViewModel: UpdaterViewModel) {
-    if(!updaterViewModel.updateFound) return
+    if (!updaterViewModel.updateFound) return
+
     AlertDialog(
-        title = { Text("New update found") },
-        text = { Text(text = "Would you like to download new apk?") },
         onDismissRequest = { updaterViewModel.updateFound = false },
+        title = { Text("New update found") },
+        text = { Text("Would you like to download the new APK?") },
         confirmButton = {
-            TextButton(onClick = {
-                println(updaterViewModel.updater == null)
-                CoroutineScope(Dispatchers.IO).launch {
-                    updaterViewModel.updater?.requestDownload()
+            TextButton(
+                onClick = {
+                    updaterViewModel.viewModelScope.launch(Dispatchers.IO) {
+                        updaterViewModel.updater?.requestDownload()
+                    }
+                    updaterViewModel.updateFound = false
                 }
-                updaterViewModel.updateFound = false
-            }) {
-                Text(text = "Download")
+            ) {
+                Text("Download")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = { updaterViewModel.updateFound = false }) {
+                Text("Cancel")
             }
         }
     )

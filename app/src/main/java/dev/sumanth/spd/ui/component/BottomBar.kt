@@ -10,7 +10,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import dev.sumanth.spd.model.NavigationItem
 import kotlinx.coroutines.launch
 
-
 @Composable
 fun BottomBar(navigationItems: List<NavigationItem>, pagerState: PagerState) {
     val coroutineScope = rememberCoroutineScope()
@@ -20,12 +19,12 @@ fun BottomBar(navigationItems: List<NavigationItem>, pagerState: PagerState) {
             NavigationBarItem(
                 icon = {
                     Icon(
-                        if (pagerState.currentPage == index) item.selectedIcon else item.unselectedIcon,
-                        contentDescription = null
+                        imageVector = if (pagerState.currentPage == index) item.selectedIcon else item.unselectedIcon,
+                        contentDescription = item.title
                     )
                 },
                 label = { Text(item.title) },
-                selected = index==pagerState.currentPage,
+                selected = index == pagerState.currentPage,
                 onClick = {
                     coroutineScope.launch {
                         pagerState.animateScrollToPage(index)
