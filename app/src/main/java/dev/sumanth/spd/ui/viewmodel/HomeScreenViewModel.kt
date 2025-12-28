@@ -1,65 +1,76 @@
 package dev.sumanth.spd.ui.viewmodel
 
-import android.content.Context
+import android.app.Application
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import dev.sumanth.spd.utils.SharedPref
 import dev.sumanth.spd.utils.convertCodec
 import dev.sumanth.spd.utils.downloadFile
 import dev.sumanth.spd.utils.getFileMeta
 import dev.sumanth.spd.utils.getPlaylistItems
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.File
 
-class HomeScreenViewModel(current: Context) : ViewModel() {
+class HomeScreenViewModel(application: Application) : AndroidViewModel(application) {
 
-    var fileProgress = mutableFloatStateOf(0f)
-    var totalProgress = mutableFloatStateOf(0f)
-    var fileName = mutableStateOf("")
-    var spotifyLink = mutableStateOf("")
-    var loader = mutableStateOf(false)
-    val sharedPref = mutableStateOf(SharedPref(current))
-    val convertToMp3 = mutableStateOf(false)
+    var fileProgress by mutableFloatStateOf(0f)
+    var totalProgress by mutableFloatStateOf(0f)
+    var fileName by mutableStateOf("")
+    var spotifyLink by mutableStateOf("")
+    var loader by mutableStateOf(false)
+    var convertToMp3 by mutableStateOf(false)
+    private val sharedPref = SharedPref(application)
 
-    fun downloadPlaylist() = CoroutineScope(Dispatchers.IO).launch {
-        loader.value = true
-        val downloadPath = sharedPref.value.getDownloadPath()
-        fileName.value = "Fetching playlist"
-        val spotifyList = getPlaylistItems(spotifyLink.value)
-        fileName.value = "Playlist fetched successfully"
-        var queryNumber = 0
-        var retries = 5
-        while (queryNumber < spotifyList.size) {
+    fun downloadPlaylist() {
+        if (loader) return
+        viewModelScope.launch {
+            loader = true
             try {
-                val fileMeta = getFileMeta(spotifyList[queryNumber])
-                File(downloadPath).mkdir()
-                fileName.value = "Downloading " + fileMeta["name"].toString()
-                val path = "$downloadPath/${fileMeta["name"]}"
-                downloadFile(fileMeta["url"].toString(), "$path.m4a") { b, c ->
-                    fileProgress.floatValue = (b * 100 / c).toFloat() / 100
+                val downloadPath = sharedPref.getDownloadPath()
+                fileName = "Fetching playlist..."
+                val spotifyList = withContext(Dispatchers.IO) { getPlaylistItems(spotifyLink) }
+                if (spotifyList.isEmpty()) {
+                    fileName = "Playlist is empty or link is invalid"
+                    loader = false
+                    return@launch
                 }
-                if(convertToMp3.value) {
-                    convertCodec(path)
+                fileName = "Playlist fetched successfully"
+
+                spotifyList.forEachIndexed { index, item ->
+                    try {
+                        val fileMeta = withContext(Dispatchers.IO) { getFileMeta(item) }
+                        withContext(Dispatchers.IO) { File(downloadPath).mkdirs() }
+
+                        val name = fileMeta["name"].toString()
+                        fileName = "Downloading $name"
+                        val path = "$downloadPath/$name"
+
+                        withContext(Dispatchers.IO) {
+                            downloadFile(fileMeta["url"].toString(), "$path.m4a") { b, c ->
+                                fileProgress = (b * 100 / c).toFloat() / 100
+                            }
+                            if (convertToMp3) {
+                                convertCodec(path)
+                            }
+                        }
+                        totalProgress = (index + 1).toFloat() / spotifyList.size
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
-                queryNumber++
-                retries = 5
-                totalProgress.floatValue = (queryNumber.toFloat()/spotifyList.size)
             } catch (e: Exception) {
-                println(e)
-                if (retries == 0) {
-                    queryNumber++
-                    retries = 5
-                    totalProgress.floatValue = (queryNumber.toFloat()/spotifyList.size)
-                } else {
-                    retries--
-                }
+                fileName = "Error: ${e.message}"
+            } finally {
+                loader = false
             }
-            println(totalProgress)
         }
-        loader.value = false
     }
 
 }

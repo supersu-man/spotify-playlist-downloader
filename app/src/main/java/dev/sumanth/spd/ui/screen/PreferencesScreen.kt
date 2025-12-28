@@ -1,59 +1,71 @@
 package dev.sumanth.spd.ui.screen
 
-import android.app.Activity
 import android.content.Intent
 import android.os.Environment
-import androidx.activity.compose.ManagedActivityResultLauncher
 import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.ActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Card
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import dev.sumanth.spd.utils.SharedPref
 
 @Composable
 fun PreferencesScreen() {
     val context = LocalContext.current
-    val sharedPref by remember { mutableStateOf(SharedPref(context)) }
+    val sharedPref = remember { SharedPref(context) }
     var downloadPath by remember { mutableStateOf(sharedPref.getDownloadPath()) }
 
-    val launcher = rememberLauncherForActivityResult(contract = ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val uri = result.data?.data?.path
-            if(uri != null) {
-                val folder = uri.split(":")[1]
-                downloadPath = Environment.getExternalStorageDirectory().path + "/" + folder
+    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
+        uri?.let {
+            val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+            context.contentResolver.takePersistableUriPermission(it, takeFlags)
+
+            val segments = uri.path?.split(":")
+            if (segments != null && segments.size > 1) {
+                val folderPath = segments[1]
+                val storageBase = if (uri.path?.contains("primary") == true) {
+                    Environment.getExternalStorageDirectory().path
+                } else {
+                    "/storage/${segments[0].split("/").last()}"
+                }
+
+                downloadPath = "$storageBase/$folderPath"
                 sharedPref.storeDownloadPath(downloadPath)
             }
         }
     }
 
-    Column(modifier = Modifier.padding(10.dp, 20.dp).fillMaxSize()) {
-        Card(onClick = { launch(launcher) }, modifier = Modifier.fillMaxWidth() ) {
-            Text("Download location: ", modifier = Modifier.padding(10.dp, 10.dp, 10.dp, 10.dp))
-            Text(downloadPath, modifier = Modifier.padding(10.dp, 0.dp, 10.dp, 10.dp), fontSize = 14.sp)
+    Column(
+        modifier = Modifier.padding(16.dp).fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        Text("General Settings", style = MaterialTheme.typography.titleMedium)
+
+        Card(
+            onClick = { launcher.launch(null) },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text("Download Location", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    text = downloadPath,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "Tap to change folder",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
-
 }
-
-private fun launch(launcher: ManagedActivityResultLauncher<Intent, ActivityResult>) {
-    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-        addCategory(Intent.CATEGORY_DEFAULT)
-    }
-    launcher.launch(intent)
-}
-

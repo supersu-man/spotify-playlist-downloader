@@ -1,72 +1,89 @@
 package dev.sumanth.spd.ui.screen
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Switch
-import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.sumanth.spd.ui.viewmodel.HomeScreenViewModel
 import java.util.Locale
 
 @Composable
-fun HomeScreen() {
-    val context = LocalContext.current
-    val homeScreenViewModel by remember { mutableStateOf(HomeScreenViewModel(context)) }
-    Column(modifier = Modifier.padding(10.dp, 20.dp).fillMaxSize()) {
-        Text("Enter Playlist Link")
-        OutlinedTextField(
-            value = homeScreenViewModel.spotifyLink.value, onValueChange = { homeScreenViewModel.spotifyLink.value = it },
-            label = { Text("Paste playlist link here") },
-            modifier = Modifier.fillMaxWidth().padding(0.dp, 5.dp), minLines = 3
-        )
-        Row(modifier = Modifier.padding(0.dp, 5.dp).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
-            Text("Convert to MP3")
-            Switch(checked = homeScreenViewModel.convertToMp3.value, onCheckedChange = { homeScreenViewModel.convertToMp3.value = it })
+fun HomeScreen(viewModel: HomeScreenViewModel = viewModel()) {
+    Column(modifier = Modifier.padding(16.dp).fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+
+                Text("Playlist Details", style = MaterialTheme.typography.titleMedium)
+
+                OutlinedTextField(
+                    value = viewModel.spotifyLink,
+                    onValueChange = { viewModel.spotifyLink = it },
+                    label = { Text("Spotify Playlist Link") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text("Convert to MP3", style = MaterialTheme.typography.bodyLarge)
+                    Switch(checked = viewModel.convertToMp3, onCheckedChange = { viewModel.convertToMp3 = it })
+                }
+            }
         }
-        Button (onClick = { homeScreenViewModel.downloadPlaylist() }, modifier = Modifier.padding(0.dp, 5.dp).fillMaxWidth().height(40.dp)) {
-            if(homeScreenViewModel.loader.value) {
-                CircularProgressIndicator(modifier = Modifier.fillMaxHeight().aspectRatio(1f), color = MaterialTheme.colorScheme.onPrimary)
+
+        Button(
+            onClick = { viewModel.downloadPlaylist() },
+            modifier = Modifier.fillMaxWidth().height(48.dp),
+            enabled = !viewModel.loader
+        ) {
+            if (viewModel.loader) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    strokeWidth = 2.dp
+                )
             } else {
                 Text("Download Playlist")
             }
         }
-        HorizontalDivider(modifier = Modifier.padding(0.dp, 20.dp))
-        if (homeScreenViewModel.totalProgress.floatValue > 0f && homeScreenViewModel.totalProgress.floatValue < 100f) {
-            Text(text = homeScreenViewModel.fileName.value, modifier = Modifier.padding(0.dp, 10.dp))
-            LinearProgressIndicator(progress = { homeScreenViewModel.totalProgress.floatValue }, modifier = Modifier.fillMaxWidth().padding(0.dp, 10.dp).height(14.dp), drawStopIndicator = { })
-            Text(text = String.format(Locale.ENGLISH, "%.1f", homeScreenViewModel.totalProgress.floatValue * 100) + "%", modifier = Modifier.padding(0.dp, 10.dp).fillMaxWidth(), textAlign = TextAlign.Center)
-        }
-        if (homeScreenViewModel.totalProgress.floatValue == 1f) {
-            Text(text =  "Download complete", modifier = Modifier.padding(0.dp, 10.dp).fillMaxWidth(), textAlign = TextAlign.Center)
+
+        if (viewModel.totalProgress > 0f) {
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    val statusText = if (viewModel.totalProgress == 1f) "Download complete" else viewModel.fileName
+                    Text(text = statusText, style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    if (viewModel.totalProgress < 1f) {
+                        LinearProgressIndicator(
+                            progress = { viewModel.totalProgress },
+                            modifier = Modifier.fillMaxWidth().height(8.dp)
+                        )
+                        Text(
+                            text = String.format(Locale.ENGLISH, "%.1f%%", viewModel.totalProgress * 100),
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.End,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+            }
         }
     }
 }
-
-
-
-
-
-
-
-
