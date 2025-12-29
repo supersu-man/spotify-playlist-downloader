@@ -51,7 +51,6 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
                         val fileMeta = withContext(Dispatchers.IO) {
                             DownloadManager.getFileMeta(item)
                         }
-                        withContext(Dispatchers.IO) { File(downloadPath).mkdirs() }
 
                         fileName = "Downloading ${item.name}"
                         val path = "$downloadPath/${sanitizeFilename(item.name)}"
@@ -61,7 +60,9 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
                                 fileProgress = (b * 100 / c).toFloat() / 100
                             }
                             if (convertToMp3) {
-                                DownloadManager.convertToMp3(path, fileMeta.extention)
+                                DownloadManager.convertToMp3(path, fileMeta.extention, item)
+                            } else {
+                                DownloadManager.tagFile(path, fileMeta.extention, item)
                             }
                         }
                         totalProgress = (index + 1).toFloat() / spotifyList.size

@@ -71,7 +71,9 @@ object DownloadManager {
         val extractor = YouTube.getStreamExtractor(mediaLink)
         extractor.fetchPage()
 
-        val bestStream = extractor.audioStreams.maxByOrNull { it.bitrate }
+        val bestStream = extractor.audioStreams
+            .filter { it.format?.suffix == "m4a" }
+            .maxByOrNull { it.bitrate }
             ?: throw IOException("No audio streams found for ${track.name}")
 
         return FileMeta(url = bestStream.content, name = extractor.name, extention = bestStream.format?.suffix ?: "m4a")
@@ -86,7 +88,7 @@ object DownloadManager {
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected code $response")
 
-            val body = response.body ?: throw IOException("Empty response body")
+            val body = response.body
             val totalSize = body.contentLength()
 
             File(path).parentFile?.mkdirs()
@@ -107,18 +109,110 @@ object DownloadManager {
         }
     }
 
-    fun convertToMp3(filePath: String, ext: String) {
+    fun tagFile(filePath: String, ext: String, track: Track) {
         val inputPath = "$filePath.$ext"
-        val outputPath = "$filePath.mp3"
-        if(ext == "mp3") return
+        val tempPath = "$filePath.tmp.$ext"
 
-        val command = "-i \"$inputPath\" -vn -ab 192k -ar 44100 -y \"$outputPath\""
+        val artist = track.artists.joinToString(", ") { it.name }
+        val title = track.name
+        val album = track.album.name
+
+        val thumbUrl = track.album.images.firstOrNull()?.url
+        val thumbFile = thumbUrl?.let { downloadThumbnail(it) }
+
+        val command = StringBuilder("-i \"$inputPath\" ")
+
+        if (thumbFile != null) {
+            command.append("-i \"${thumbFile.absolutePath}\" ")
+        }
+
+        command.append("-metadata title=\"$title\" ")
+        command.append("-metadata artist=\"$artist\" ")
+        command.append("-metadata album=\"$album\" ")
+
+        if (thumbFile != null) {
+            command.append("-map 0:0 -map 1:0 -c copy -disposition:v:0 attached_pic ")
+        } else {
+            command.append("-codec copy ")
+        }
+
+        command.append("-y \"$tempPath\"")
 
         FFmpegKitConfig.setLogLevel(Level.AV_LOG_QUIET)
-        val session = FFmpegKit.execute(command)
+        val session = FFmpegKit.execute(command.toString())
+
+        if (ReturnCode.isSuccess(session.returnCode)) {
+            val originalFile = File(inputPath)
+            val tempFile = File(tempPath)
+            if (originalFile.delete()) {
+                tempFile.renameTo(originalFile)
+            }
+        }
+
+        thumbFile?.delete()
+    }
+    fun convertToMp3(filePath: String, ext: String, track: Track) {
+        val inputPath = "$filePath.$ext"
+        val outputPath = "$filePath.mp3"
+        if (ext == "mp3") return
+
+        val artist = track.artists.joinToString(", ") { it.name }
+        val title = track.name
+        val album = track.album.name
+
+        val thumbUrl = track.album.images.firstOrNull()?.url
+        val thumbFile = thumbUrl?.let { downloadThumbnail(it) }
+
+        val command = StringBuilder("-i \"$inputPath\" ")
+
+        if (thumbFile != null) {
+            command.append("-i \"${thumbFile.absolutePath}\" ")
+        }
+        command.append("-map 0:a ")
+        if (thumbFile != null) {
+            command.append("-map 1:v ")
+        }
+        command.append("-c:a libmp3lame -ab 192k -ar 44100 ")
+
+        command.append("-metadata title=\"$title\" ")
+        command.append("-metadata artist=\"$artist\" ")
+        command.append("-metadata album=\"$album\" ")
+
+        if (thumbFile != null) {
+            command.append("-c:v mjpeg ")
+            command.append("-disposition:v attached_pic ")
+            command.append("-metadata:s:v title=\"Album cover\" ")
+            command.append("-metadata:s:v comment=\"Cover (front)\" ")
+            command.append("-id3v2_version 3 ")
+        }
+
+        command.append("-y \"$outputPath\"")
+
+        FFmpegKitConfig.setLogLevel(Level.AV_LOG_QUIET)
+        val session = FFmpegKit.execute(command.toString())
 
         if (ReturnCode.isSuccess(session.returnCode)) {
             File(inputPath).delete()
+        }
+
+        thumbFile?.delete()
+    }
+
+    private fun downloadThumbnail(url: String): File? {
+        return try {
+            val request = okhttp3.Request.Builder().url(url).build()
+            client.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) return null
+                val tempFile = File.createTempFile("thumb", ".jpg")
+                response.body.byteStream().use { input ->
+                    tempFile.outputStream().use { output ->
+                        input.copyTo(output)
+                    }
+                }
+                tempFile
+            }
+        } catch (e: Exception) {
+            null
         }
     }
 }
