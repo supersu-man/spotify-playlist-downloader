@@ -1,40 +1,67 @@
-![](githubdocs/logo.png)
+<p align="center">
+  <img src="githubdocs/logo.png" alt="Logo">
+</p>
 
-# SpotifyPlaylistDownloader
-SpotifyPlaylistDownloader is a straightforward app that allows users to download Spotify playlists as MP3/M4A files. The downloaded files are saved to /Download/spotify-playlist-downloader. The app fetches the tracks from YouTube Music and downloads them as MP3s/M4As using various APIs listed below.
+<h1 align="center">Spotify Playlist Downloader</h1>
 
-## Features
-Download Music from Spotify Playlist: Simply input your Spotify playlist link, and the app will download the tracks as MP3 files.
+<p align="center">
+  <img src="https://img.shields.io/github/v/release/supersu-man/spotify-playlist-downloader?style=for-the-badge&color=1DB954" alt="Release">
+  <img src="https://img.shields.io/github/license/supersu-man/spotify-playlist-downloader?style=for-the-badge" alt="License">
+  <img src="https://img.shields.io/github/stars/supersu-man/spotify-playlist-downloader?style=for-the-badge" alt="Stars">
+</p>
 
-## Installation
-Download the APK from the [releases](https://github.com/supersu-man/spotify-playlist-downloader/releases) page.
+<p align="center">
+  <strong>A straightforward Android application to bridge your Spotify playlists to your local storage.</strong><br>
+  Fetch metadata from Spotify, find high-quality audio on YouTube Music, and download with full metadata and album art.
+</p>
 
-Install the APK on your Android device.
+---
 
-Grant necessary permissions for file access.
+## ✨ Features
 
-## Usage
-Open the app and paste your Spotify playlist link.
+- 🎵 **Lossless Mapping**: Seamlessly converts Spotify playlist tracks into high-quality audio files.
+- 🖼️ **Full Metadata**: Automatically embeds **Artist**, **Album**, **Title**, and **High-Res Cover Art** into every file.
+- ⚡ **FFmpeg Powered**: High-speed remuxing and optional MP3 conversion.
+- 📁 **Custom Storage**: Choose exactly where you want your music saved.
+- 🌓 **Modern UI**: Built with Jetpack Compose for a smooth, native Android experience.
+- 🔗 **Smart Fetching**: Uses the powerful NewPipe Extractor for reliable YouTube Music sourcing.
 
-Hit the "Download" button.
+## 🚀 How it Works
 
-Enjoy your music from internalstorage/Download/spotify-playlist-downloader.
+1. **Link**: Paste any public Spotify playlist URL.
+2. **Fetch**: The app uses the Spotify Web API to get track details and thumbnails.
+3. **Match**: Searches YouTube Music for the best matching audio stream (M4A/MP3).
+4. **Tag**: FFmpeg injects ID3v2.3 tags and album art into the file headers.
+5. **Save**: Files are organized and saved directly to your device.
 
-## How It Works
-Input Spotify Playlist Link: Enter the link to your Spotify playlist.
+## 📥 Installation
 
-Fetching and Conversion: The app retrieves the playlist details and searches for matching tracks on YouTube Music.
+1. Head over to the [**Releases**](https://github.com/supersu-man/spotify-playlist-downloader/releases) page.
+2. Download the latest `.apk` file.
+3. Install it on your Android device (ensure "Install from Unknown Sources" is enabled).
+4. Launch the app and grant the necessary Storage permissions.
 
-Download as file: Tracks are downloaded and saved in MP3/M4A format to your device.
+## 🛠️ Tech Stack
 
-## Dependencies / Tools Used
-- [New Pipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor)
-- [Spotify Web Api Java](https://github.com/thelinmichael/spotify-web-api-java)
-- [Okhttp](https://square.github.io/okhttp/)
-- [YouTube Music](https://music.youtube.com/)
+| Component | Library/Service |
+| :--- | :--- |
+| **Language** | Kotlin / Jetpack Compose |
+| **Extraction** | [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) |
+| **Metadata** | [Spotify Web API Java](https://github.com/thelinmichael/spotify-web-api-java) |
+| **Processing** | [FFmpeg Kit](https://github.com/arthenica/ffmpeg-kit) |
+| **Networking** | [OkHttp 4](https://square.github.io/okhttp/) |
 
-## Contributing
-We welcome contributions! Feel free to fork the repository and submit pull requests.
+## 🤝 Contributing
 
-## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📜 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
