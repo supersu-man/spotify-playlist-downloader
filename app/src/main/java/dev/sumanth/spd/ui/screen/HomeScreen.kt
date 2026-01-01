@@ -44,17 +44,31 @@ fun HomeScreen(viewModel: HomeScreenViewModel = viewModel()) {
             }
         }
 
-        Button(
-            onClick = { viewModel.downloadPlaylist() },
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-            enabled = !viewModel.loader
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
+            Button(
+                onClick = { viewModel.downloadPlaylist() },
+                modifier = Modifier.weight(1f).height(48.dp),
+                enabled = !viewModel.loader
+            ) {
+                if (viewModel.loader) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Text("Download Playlist")
+                }
+            }
+
             if (viewModel.loader) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp)
-                )
-            } else {
-                Text("Download Playlist")
+                OutlinedButton(
+                    onClick = { viewModel.cancelDownload() },
+                    modifier = Modifier.height(48.dp)
+                ) {
+                    Text("Cancel")
+                }
             }
         }
 

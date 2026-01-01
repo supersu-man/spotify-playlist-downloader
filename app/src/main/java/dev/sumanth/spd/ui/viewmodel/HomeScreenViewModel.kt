@@ -10,6 +10,7 @@ import androidx.lifecycle.viewModelScope
 import dev.sumanth.spd.utils.DownloadManager
 import dev.sumanth.spd.utils.SharedPref
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -23,14 +24,13 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
     var loader by mutableStateOf(false)
     var convertToMp3 by mutableStateOf(false)
     private val sharedPref = SharedPref(application)
-
+    private var downloadJob: Job? = null
     private fun sanitizeFilename(name: String): String {
         return name.replace(Regex("[\\\\/:*?\"<>|]"), "_")
     }
-
     fun downloadPlaylist() {
         if (loader) return
-        viewModelScope.launch {
+        downloadJob = viewModelScope.launch {
             loader = true
             try {
                 val downloadPath = sharedPref.getDownloadPath()
@@ -76,5 +76,12 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
                 loader = false
             }
         }
+    }
+
+    fun cancelDownload() {
+        downloadJob?.cancel()
+        loader = false
+        fileName = "Download cancelled"
+        totalProgress = 0f
     }
 }
