@@ -18,10 +18,9 @@ class UpdaterViewModel : ViewModel() {
     fun checkForUpdate(context: Activity) {
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val updater = ApkUpdater(context, context.getString(R.string.update_url))
-                updater.threeNumbers = true
-                this@UpdaterViewModel.updater = updater
-                if (updater.isInternetConnection() && updater.isNewUpdateAvailable() == true) {
+                updater = ApkUpdater(context, context.getString(R.string.update_url))
+                updater?.threeNumbers = true
+                if (updater?.isNewUpdateAvailable() == true) {
                     updateFound = true
                 }
             } catch (e: Exception) {
