@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -26,9 +28,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    kotlinOptions {
-        jvmTarget = "11"
-    }
     buildFeatures {
         compose = true
     }
@@ -36,6 +35,12 @@ android {
         resources {
             excludes += "/META-INF/*"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_11)
     }
 }
 
@@ -59,7 +64,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
 
     implementation("se.michaelthelin.spotify:spotify-web-api-java:9.4.0")
-    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.24.8")
+    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.25.0")
     implementation("com.github.supersu-man:apkupdater-library:v2.2.0")
 
     implementation("com.arthenica:smart-exception-java:0.2.1")

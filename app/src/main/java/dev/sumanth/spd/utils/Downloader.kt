@@ -76,7 +76,7 @@ object DownloadManager {
             .maxByOrNull { it.bitrate }
             ?: throw IOException("No audio streams found for ${track.name}")
 
-        return FileMeta(url = bestStream.content, name = extractor.name, extention = bestStream.format?.suffix ?: "m4a")
+        return FileMeta(url = bestStream.content, name = extractor.name, extention = "m4a")
     }
 
     fun downloadFile(url: String, path: String, onProgress: ((Long, Long) -> Unit)? = null) {
