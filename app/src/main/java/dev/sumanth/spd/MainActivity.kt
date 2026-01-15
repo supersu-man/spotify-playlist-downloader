@@ -30,6 +30,7 @@ import dev.sumanth.spd.ui.screen.HomeScreen
 import dev.sumanth.spd.ui.screen.PreferencesScreen
 import dev.sumanth.spd.ui.viewmodel.UpdaterViewModel
 import dev.sumanth.spd.utils.NewPipeDownloader
+import dev.sumanth.spd.utils.SharedPref
 import dev.sumanth.spd.utils.SpotifyManager
 import dev.sumanth.spd.utils.spotify
 import kotlinx.coroutines.launch
@@ -48,8 +49,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val sharedPref = SharedPref(this)
+        if (sharedPref.getAutoUpdateCheck()) {
+            updateViewModel.checkForUpdate(this)
+        }
+
         NewPipe.init(NewPipeDownloader.getInstance())
-        updateViewModel.checkForUpdate(this)
 
         setContent {
             val scope = rememberCoroutineScope()

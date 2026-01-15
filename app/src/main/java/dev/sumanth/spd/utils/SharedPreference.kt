@@ -22,6 +22,16 @@ class SharedPref(context: Context) {
         }
     }
 
+    fun getAutoUpdateCheck(): Boolean {
+        return sharedPref.getBoolean(KEY_AUTO_UPDATE_CHECK, true)
+    }
+
+    fun storeAutoUpdateCheck(enabled: Boolean) {
+        sharedPref.edit { 
+            putBoolean(KEY_AUTO_UPDATE_CHECK, enabled)
+        }
+    }
+
     private fun getDefaultDownloadPath(): String {
         val downloadsDirectory = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         return File(downloadsDirectory, DEFAULT_FOLDER_NAME).absolutePath
@@ -30,6 +40,7 @@ class SharedPref(context: Context) {
     companion object {
         private const val PREFS_NAME = "spd_settings"
         private const val KEY_DOWNLOAD_PATH = "download_path"
+        private const val KEY_AUTO_UPDATE_CHECK = "auto_update_check"
         private const val DEFAULT_FOLDER_NAME = "spotify-playlist-downloader"
     }
 }
