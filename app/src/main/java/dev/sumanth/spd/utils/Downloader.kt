@@ -44,8 +44,8 @@ object DownloadManager {
                     .execute()
 
                 paging.items.forEach { item ->
-                    val track = item.track as Track
-                    songs.add(track)
+                    val track = item.track ?: return@forEach
+                    songs.add(track as Track)
                 }
 
                 offset += paging.items.size
