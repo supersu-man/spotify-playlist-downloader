@@ -65,7 +65,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
 
     implementation("se.michaelthelin.spotify:spotify-web-api-java:9.4.0")
-    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.25.0")
+    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.25.1")
     implementation("com.github.supersu-man:apkupdater-library:v2.2.0")
 
     implementation("com.arthenica:smart-exception-java:0.2.1")
