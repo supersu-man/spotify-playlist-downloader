@@ -27,6 +27,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     buildFeatures {
         compose = true
@@ -66,6 +67,7 @@ dependencies {
 
     implementation("se.michaelthelin.spotify:spotify-web-api-java:9.4.0")
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.25.2")
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.5")
     implementation("com.github.supersu-man:apkupdater-library:v2.2.0")
 
     implementation("com.arthenica:smart-exception-java:0.2.1")
