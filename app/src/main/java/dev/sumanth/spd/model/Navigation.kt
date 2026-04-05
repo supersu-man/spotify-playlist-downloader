@@ -7,3 +7,8 @@ data class NavigationItem(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 )
+
+data class Track(
+    val title: String,
+    val artist: String
+)

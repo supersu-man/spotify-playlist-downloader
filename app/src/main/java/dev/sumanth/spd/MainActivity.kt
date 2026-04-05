@@ -18,7 +18,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import dev.sumanth.spd.model.NavigationItem
 import dev.sumanth.spd.ui.component.Background
@@ -31,9 +30,6 @@ import dev.sumanth.spd.ui.screen.PreferencesScreen
 import dev.sumanth.spd.ui.viewmodel.UpdaterViewModel
 import dev.sumanth.spd.utils.NewPipeDownloader
 import dev.sumanth.spd.utils.SharedPref
-import dev.sumanth.spd.utils.SpotifyManager
-import dev.sumanth.spd.utils.spotify
-import kotlinx.coroutines.launch
 import org.schabi.newpipe.extractor.NewPipe
 
 class MainActivity : ComponentActivity() {
@@ -57,13 +53,6 @@ class MainActivity : ComponentActivity() {
         NewPipe.init(NewPipeDownloader.getInstance())
 
         setContent {
-            val scope = rememberCoroutineScope()
-            remember {
-                scope.launch {
-                    spotify = SpotifyManager(this@MainActivity)
-                    spotify.init()
-                }
-            }
 
             val pagerState = rememberPagerState(pageCount = { navigationItems.size })
             val title by remember {

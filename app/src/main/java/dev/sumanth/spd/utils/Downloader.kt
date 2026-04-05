@@ -13,7 +13,6 @@ import org.schabi.newpipe.extractor.downloader.Response
 import org.schabi.newpipe.extractor.exceptions.ReCaptchaException
 import org.schabi.newpipe.extractor.services.youtube.extractors.YoutubeMusicSearchExtractor
 import org.schabi.newpipe.extractor.services.youtube.linkHandler.YoutubeSearchQueryHandlerFactory
-import se.michaelthelin.spotify.model_objects.specification.Track
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -29,44 +28,16 @@ object DownloadManager {
             .build()
     }
 
-    fun getPlaylistItems(link: String): List<Track> {
-        val songs = mutableListOf<Track>()
-        try {
-            val playlistId = link.split("playlist/")[1].split("?")[0]
-            var offset = 0
-            var hasMore = true
-
-            while (hasMore) {
-                val paging = spotify.spotifyApi.getPlaylistsItems(playlistId)
-                    .offset(offset)
-                    .limit(100)
-                    .build()
-                    .execute()
-
-                paging.items.forEach { item ->
-                    val track = item.track ?: return@forEach
-                    songs.add(track as Track)
-                }
-
-                offset += paging.items.size
-                hasMore = offset < paging.total
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-        return songs
-    }
-
-    fun getFileMeta(track: Track): FileMeta {
+    fun getFileMeta(title: String, artist: String): FileMeta {
         val extra = YouTube.getSearchExtractor(
-            track.name + " " + track.artists.joinToString(" ") { it.name },
+            title + " " + artist,
             listOf(YoutubeSearchQueryHandlerFactory.MUSIC_SONGS),
             null
         ) as YoutubeMusicSearchExtractor
         extra.fetchPage()
 
         val mediaLink = extra.initialPage.items.firstOrNull()?.url
-            ?: throw IOException("No search results found for ${track.name}")
+            ?: throw IOException("No search results found for $title")
 
         val extractor = YouTube.getStreamExtractor(mediaLink)
         extractor.fetchPage()
@@ -74,7 +45,7 @@ object DownloadManager {
         val bestStream = extractor.audioStreams
             .filter { it.format?.suffix == "m4a" }
             .maxByOrNull { it.bitrate }
-            ?: throw IOException("No audio streams found for ${track.name}")
+            ?: throw IOException("No audio streams found for $title")
 
         return FileMeta(url = bestStream.content, name = extractor.name, extention = "m4a")
     }
@@ -109,32 +80,16 @@ object DownloadManager {
         }
     }
 
-    fun tagFile(filePath: String, ext: String, track: Track) {
+    fun tagFile(filePath: String, ext: String, trackName: String, artist: String) {
         val inputPath = "$filePath.$ext"
         val tempPath = "$filePath.tmp.$ext"
 
-        val artist = track.artists.joinToString(", ") { it.name }
-        val title = track.name
-        val album = track.album.name
-
-        val thumbUrl = track.album.images.firstOrNull()?.url
-        val thumbFile = thumbUrl?.let { downloadThumbnail(it) }
-
         val command = StringBuilder("-i \"$inputPath\" ")
 
-        if (thumbFile != null) {
-            command.append("-i \"${thumbFile.absolutePath}\" ")
-        }
-
-        command.append("-metadata title=\"$title\" ")
+        command.append("-metadata title=\"$trackName\" ")
         command.append("-metadata artist=\"$artist\" ")
-        command.append("-metadata album=\"$album\" ")
 
-        if (thumbFile != null) {
-            command.append("-map 0:0 -map 1:0 -c copy -disposition:v:0 attached_pic ")
-        } else {
-            command.append("-codec copy ")
-        }
+        command.append("-codec copy ")
 
         command.append("-y \"$tempPath\"")
 
@@ -149,42 +104,22 @@ object DownloadManager {
             }
         }
 
-        thumbFile?.delete()
     }
-    fun convertToMp3(filePath: String, ext: String, track: Track) {
+    fun convertToMp3(filePath: String, ext: String, trackName: String, artist: String) {
         val inputPath = "$filePath.$ext"
         val outputPath = "$filePath.mp3"
         if (ext == "mp3") return
 
-        val artist = track.artists.joinToString(", ") { it.name }
-        val title = track.name
-        val album = track.album.name
 
-        val thumbUrl = track.album.images.firstOrNull()?.url
-        val thumbFile = thumbUrl?.let { downloadThumbnail(it) }
 
         val command = StringBuilder("-i \"$inputPath\" ")
 
-        if (thumbFile != null) {
-            command.append("-i \"${thumbFile.absolutePath}\" ")
-        }
         command.append("-map 0:a ")
-        if (thumbFile != null) {
-            command.append("-map 1:v ")
-        }
+
         command.append("-c:a libmp3lame -ab 192k -ar 44100 ")
 
-        command.append("-metadata title=\"$title\" ")
+        command.append("-metadata title=\"$trackName\" ")
         command.append("-metadata artist=\"$artist\" ")
-        command.append("-metadata album=\"$album\" ")
-
-        if (thumbFile != null) {
-            command.append("-c:v mjpeg ")
-            command.append("-disposition:v attached_pic ")
-            command.append("-metadata:s:v title=\"Album cover\" ")
-            command.append("-metadata:s:v comment=\"Cover (front)\" ")
-            command.append("-id3v2_version 3 ")
-        }
 
         command.append("-y \"$outputPath\"")
 
@@ -195,7 +130,6 @@ object DownloadManager {
             File(inputPath).delete()
         }
 
-        thumbFile?.delete()
     }
 
     private fun downloadThumbnail(url: String): File? {
