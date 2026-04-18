@@ -22,18 +22,6 @@ jobs:
           java-version: '17'
           cache: 'gradle'
 
-      - name: Access Api keys
-        env:
-          clientId: ${{ secrets.CLIENT_ID }}
-          clientSecret: ${{ secrets.CLIENT_SECRET }}
-          path: app/src/main/res/values/secrets.xml
-        run: |
-          touch $path
-          echo \<resources\> >> $path
-          echo \<string name=\"CLIENT_ID\"\>$clientId\</string\> >> $path
-          echo \<string name=\"CLIENT_SECRET\"\>$clientSecret\</string\> >> $path
-          echo \</resources\> >> $path
-
       - name: Build App
         id: build
         run: bash ./gradlew assembleRelease
