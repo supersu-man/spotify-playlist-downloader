@@ -45,6 +45,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun startScraping() {
         if (spotifyLink.isBlank()) return Toast.makeText(getApplication(), "Spotify link is invalid.", Toast.LENGTH_SHORT).show()
+        if(spotifyLink.contains("?")) spotifyLink = spotifyLink.split("?")[0]
         appStatus = Status.SCRAPING
     }
 
