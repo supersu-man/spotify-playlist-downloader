@@ -65,7 +65,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp-urlconnection:5.3.2")
     implementation("com.squareup.okhttp3:okhttp:5.3.2")
 
-    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.25.2")
+    implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.4")
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.5")
     implementation("com.github.supersu-man:apkupdater-library:v2.2.0")
 
