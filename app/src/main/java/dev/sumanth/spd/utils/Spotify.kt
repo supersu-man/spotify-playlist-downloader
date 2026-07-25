@@ -5,7 +5,7 @@ package dev.sumanth.spd.utils
     val jsScript = """
         (async () => {
             const delay = ms => new Promise(res => setTimeout(res, ms));
-            await delay(4000);
+            await delay(3000);
             console.log("JS: Starting scraper");
             
             const rows = [];

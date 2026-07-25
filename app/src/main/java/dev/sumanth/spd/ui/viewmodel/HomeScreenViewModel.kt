@@ -3,11 +3,14 @@ package dev.sumanth.spd.ui.viewmodel
 import android.app.Application
 import android.widget.Toast
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import dev.sumanth.spd.model.AppStatus
+import dev.sumanth.spd.model.DownloadStatus
 import dev.sumanth.spd.model.Track
 import dev.sumanth.spd.utils.DownloadManager
 import dev.sumanth.spd.utils.SharedPref
@@ -15,125 +18,80 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 
-enum class Status {
-    IDLE,
-    SCRAPING,
-    SCRAPED,
-    DOWNLOADING,
-    RETRYING,
-    COMPLETED,
-}
+
 class HomeScreenViewModel(application: Application) : AndroidViewModel(application) {
 
-    var fileProgress by mutableFloatStateOf(0f)
-    var totalProgress by mutableFloatStateOf(0f)
-    var fileName by mutableStateOf("")
+    private val sharedPref = SharedPref(application)
+    var appStatus by mutableStateOf(AppStatus.IDLE)
     var spotifyLink by mutableStateOf("")
     var convertToMp3 by mutableStateOf(false)
-    private val sharedPref = SharedPref(application)
     private var downloadJob: Job? = null
+    var currentTrack by mutableIntStateOf(-1)
+    var tracks = mutableStateListOf<Track>()
+
     private fun sanitizeFilename(name: String): String {
         return name.replace(Regex("[\\\\/:*?\"<>|]"), "_")
     }
-    val failedTracks = mutableListOf<Track>()
-    var appStatus by mutableStateOf(Status.IDLE)
-
-    var spotifyList by mutableStateOf(JSONArray())
-
 
     fun startScraping() {
         if (spotifyLink.isBlank()) return Toast.makeText(getApplication(), "Spotify link is invalid.", Toast.LENGTH_SHORT).show()
         if(spotifyLink.contains("?")) spotifyLink = spotifyLink.split("?")[0]
-        appStatus = Status.SCRAPING
+        appStatus = AppStatus.SCRAPING
     }
 
     fun downloadPlaylist() {
-        if(spotifyList.length() == 0) return Toast.makeText(getApplication(), "Playlist is empty.", Toast.LENGTH_SHORT).show()
+        if (tracks.isEmpty()) return Toast.makeText(getApplication(), "Playlist is empty.", Toast.LENGTH_SHORT).show()
         downloadJob = viewModelScope.launch {
-            appStatus = Status.DOWNLOADING
-            failedTracks.clear()
+            appStatus = AppStatus.DOWNLOADING
             try {
                 val downloadPath = sharedPref.getDownloadPath()
 
-                for (i in 0 until spotifyList.length()) {
-                    val track = spotifyList.getJSONObject(i)
-                    val trackName = track.getString("title")
-                    val artist = track.getString("artist")
+                tracks.forEachIndexed { i, track ->
+                    if (track.status == DownloadStatus.COMPLETE) return@forEachIndexed
+                    
+                    currentTrack = i
+                    tracks[i] = track.copy(status = DownloadStatus.DOWNLOADING)
                     try {
                         val fileMeta = withContext(Dispatchers.IO) {
-                            DownloadManager.getFileMeta(trackName, artist)
+                            DownloadManager.getFileMeta(track.title, track.artist)
                         }
-                        fileName = "Downloading $trackName"
-                        val path = "$downloadPath/${sanitizeFilename(trackName)}"
+                        val path = "$downloadPath/${sanitizeFilename(track.title)}"
                         withContext(Dispatchers.IO) {
-                            DownloadManager.downloadFile(fileMeta.url, "$path.${fileMeta.extention}") { b, c ->
-                                fileProgress = (b * 100 / c).toFloat() / 100
-                            }
+                            DownloadManager.downloadFile(fileMeta.url, "$path.${fileMeta.extention}")
                             if (convertToMp3) {
-                                DownloadManager.convertToMp3(path, fileMeta.extention, trackName, artist)
+                                DownloadManager.convertToMp3(path, fileMeta.extention, track.title, track.artist)
                             } else {
-                                DownloadManager.tagFile(path, fileMeta.extention, trackName, artist)
+                                DownloadManager.tagFile(path, fileMeta.extention, track.title, track.artist)
                             }
                         }
-                        totalProgress = (i + 1).toFloat() / spotifyList.length()
+                        tracks[i] = track.copy(status = DownloadStatus.COMPLETE)
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        failedTracks.add(Track(trackName, artist))
+                        tracks[i] = track.copy(status = DownloadStatus.FAILED)
                     }
 
                 }
-                appStatus = Status.COMPLETED
+                appStatus = AppStatus.DOWNLOADING_COMPLETE
+                currentTrack = -1
             } catch (e: Exception) {
-                appStatus = Status.IDLE
-                fileName = "Error: ${e.message}"
+                appStatus = AppStatus.IDLE
             }
         }
     }
 
     fun cancelDownload() {
         downloadJob?.cancel()
-        appStatus = Status.SCRAPED
-        fileName = "Download cancelled"
-        totalProgress = 0f
+        appStatus = AppStatus.SCRAPING_COMPLETE
     }
-    fun retryFailedDownloads() {
-        downloadJob = viewModelScope.launch {
-            appStatus = Status.DOWNLOADING
-            val tracksToRetry = failedTracks.toList()
-            failedTracks.clear()
-            try {
-                val downloadPath = sharedPref.getDownloadPath()
-                tracksToRetry.forEachIndexed { index, item ->
-                    try {
-                        val fileMeta = withContext(Dispatchers.IO) {
-                            DownloadManager.getFileMeta(item.title, item.artist)
-                        }
-                        fileName = "Downloading ${item.title}"
-                        val path = "$downloadPath/${sanitizeFilename(item.title)}"
 
-                        withContext(Dispatchers.IO) {
-                            DownloadManager.downloadFile(fileMeta.url, "$path.${fileMeta.extention}") { b, c ->
-                                fileProgress = (b * 100 / c).toFloat() / 100
-                            }
-                            if (convertToMp3) {
-                                DownloadManager.convertToMp3(path, fileMeta.extention, item.title, item.artist)
-                            } else {
-                                DownloadManager.tagFile(path, fileMeta.extention, item.title, item.artist)
-                            }
-                        }
-                        totalProgress = (index + 1).toFloat() / tracksToRetry.size
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        failedTracks.add(item)
-                    }
-                }
-                fileName = "Download completed"
-            } catch (e: Exception) {
-                fileName = "Error: ${e.message}"
-            }
-        }
+    fun reset() {
+        tracks.clear()
+        spotifyLink = ""
+        appStatus = AppStatus.IDLE
+        currentTrack = -1
     }
-    fun getFailedDownloadsCount(): Int = failedTracks.size
+    
+    fun getFailedDownloadsCount(): Int = tracks.count { it.status == DownloadStatus.FAILED }
+    fun getDownloadedCount(): Int = tracks.count { it.status == DownloadStatus.COMPLETE }
 }

@@ -50,7 +50,7 @@ object DownloadManager {
         return FileMeta(url = bestStream.content, name = extractor.name, extention = "m4a")
     }
 
-    fun downloadFile(url: String, path: String, onProgress: ((Long, Long) -> Unit)? = null) {
+    fun downloadFile(url: String, path: String) {
         val request = okhttp3.Request.Builder()
             .url(url)
             .addHeader("Range", "bytes=0-")
@@ -68,12 +68,9 @@ object DownloadManager {
                 FileOutputStream(File(path)).use { output ->
                     val buffer = ByteArray(8192)
                     var bytesRead: Int
-                    var totalRead = 0L
 
                     while (input.read(buffer).also { bytesRead = it } != -1) {
                         output.write(buffer, 0, bytesRead)
-                        totalRead += bytesRead
-                        onProgress?.invoke(totalRead, totalSize)
                     }
                 }
             }
