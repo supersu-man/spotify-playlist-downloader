@@ -1,5 +1,8 @@
 package dev.sumanth.spd.utils
 
+import android.content.Context
+import android.net.Uri
+import androidx.documentfile.provider.DocumentFile
 import com.arthenica.ffmpegkit.FFmpegKit
 import com.arthenica.ffmpegkit.FFmpegKitConfig
 import com.arthenica.ffmpegkit.Level
@@ -17,6 +20,7 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import androidx.core.net.toUri
 
 data class FileMeta(val url: String, val name: String, val extention: String)
 
@@ -50,83 +54,102 @@ object DownloadManager {
         return FileMeta(url = bestStream.content, name = extractor.name, extention = "m4a")
     }
 
-    fun downloadFile(url: String, path: String) {
+    fun downloadFile(
+        context: Context,
+        url: String,
+        folderUriString: String,
+        fileName: String,
+        extension: String,
+        convertToMp3: Boolean,
+        artist: String
+    ) {
         val request = okhttp3.Request.Builder()
             .url(url)
             .addHeader("Range", "bytes=0-")
             .build()
 
+        val tempFile = File(context.cacheDir, "$fileName.$extension")
+        
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected code $response")
 
-            val body = response.body
-            val totalSize = body.contentLength()
-
-            File(path).parentFile?.mkdirs()
-
+            val body = response.body ?: throw IOException("Empty response body")
+            
             body.byteStream().use { input ->
-                FileOutputStream(File(path)).use { output ->
-                    val buffer = ByteArray(8192)
-                    var bytesRead: Int
-
-                    while (input.read(buffer).also { bytesRead = it } != -1) {
-                        output.write(buffer, 0, bytesRead)
-                    }
+                FileOutputStream(tempFile).use { output ->
+                    input.copyTo(output)
                 }
             }
         }
+
+        val processedFile = if (convertToMp3) {
+            convertToMp3(tempFile, fileName, artist)
+        } else {
+            tagFile(tempFile, extension, fileName, artist)
+        }
+
+        // Copy to SAF
+        val folderUri = folderUriString.toUri()
+        val pickedDir = DocumentFile.fromTreeUri(context, folderUri)
+            ?: throw IOException("Failed to get document from tree URI")
+
+        val finalExtension = if (convertToMp3) "mp3" else extension
+        val newFile = pickedDir.createFile("audio/*", "$fileName.$finalExtension")
+            ?: pickedDir.findFile("$fileName.$finalExtension")
+            ?: throw IOException("Failed to create file in selected folder")
+
+        context.contentResolver.openOutputStream(newFile.uri)?.use { output ->
+            processedFile.inputStream().use { input ->
+                input.copyTo(output)
+            }
+        }
+        
+        processedFile.delete()
+        if (processedFile != tempFile) tempFile.delete()
     }
 
-    fun tagFile(filePath: String, ext: String, trackName: String, artist: String) {
-        val inputPath = "$filePath.$ext"
-        val tempPath = "$filePath.tmp.$ext"
+    private fun tagFile(file: File, ext: String, trackName: String, artist: String): File {
+        val inputPath = file.absolutePath
+        val tempFile = File(file.parent, "${file.nameWithoutExtension}.tmp.$ext")
+        val tempPath = tempFile.absolutePath
 
         val command = StringBuilder("-i \"$inputPath\" ")
-
         command.append("-metadata title=\"$trackName\" ")
         command.append("-metadata artist=\"$artist\" ")
-
         command.append("-codec copy ")
-
         command.append("-y \"$tempPath\"")
 
         FFmpegKitConfig.setLogLevel(Level.AV_LOG_QUIET)
         val session = FFmpegKit.execute(command.toString())
 
-        if (ReturnCode.isSuccess(session.returnCode)) {
-            val originalFile = File(inputPath)
-            val tempFile = File(tempPath)
-            if (originalFile.delete()) {
-                tempFile.renameTo(originalFile)
-            }
+        return if (ReturnCode.isSuccess(session.returnCode)) {
+            file.delete()
+            tempFile
+        } else {
+            file
         }
-
     }
-    fun convertToMp3(filePath: String, ext: String, trackName: String, artist: String) {
-        val inputPath = "$filePath.$ext"
-        val outputPath = "$filePath.mp3"
-        if (ext == "mp3") return
 
-
+    private fun convertToMp3(file: File, trackName: String, artist: String): File {
+        val inputPath = file.absolutePath
+        val outputPath = File(file.parent, "${file.nameWithoutExtension}.mp3").absolutePath
 
         val command = StringBuilder("-i \"$inputPath\" ")
-
         command.append("-map 0:a ")
-
         command.append("-c:a libmp3lame -ab 192k -ar 44100 ")
-
         command.append("-metadata title=\"$trackName\" ")
         command.append("-metadata artist=\"$artist\" ")
-
         command.append("-y \"$outputPath\"")
 
         FFmpegKitConfig.setLogLevel(Level.AV_LOG_QUIET)
         val session = FFmpegKit.execute(command.toString())
 
-        if (ReturnCode.isSuccess(session.returnCode)) {
-            File(inputPath).delete()
+        return if (ReturnCode.isSuccess(session.returnCode)) {
+            file.delete()
+            File(outputPath)
+        } else {
+            file
         }
-
     }
 
     private fun downloadThumbnail(url: String): File? {

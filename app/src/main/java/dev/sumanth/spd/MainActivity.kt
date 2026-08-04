@@ -22,7 +22,6 @@ import androidx.compose.ui.Modifier
 import dev.sumanth.spd.model.NavigationItem
 import dev.sumanth.spd.ui.component.Background
 import dev.sumanth.spd.ui.component.BottomBar
-import dev.sumanth.spd.ui.component.PermissionDialog
 import dev.sumanth.spd.ui.component.TopBar
 import dev.sumanth.spd.ui.component.UpdateDialog
 import dev.sumanth.spd.ui.screen.HomeScreen
@@ -76,7 +75,6 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    PermissionDialog(this)
                     UpdateDialog(updateViewModel)
                 }
             }

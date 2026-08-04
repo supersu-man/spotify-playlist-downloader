@@ -20,8 +20,3 @@ data class Track(
     val artist: String,
     val status: DownloadStatus
 )
-
-data class Progress(
-    val total: Float,
-    val current: Float
-)

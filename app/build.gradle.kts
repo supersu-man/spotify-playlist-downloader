@@ -47,6 +47,7 @@ dependencies {
     implementation("androidx.core:core-ktx:1.19.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.11.0")
     implementation("androidx.navigation:navigation-compose:2.9.8")
+    implementation("androidx.documentfile:documentfile:1.0.1")
 
     implementation("com.squareup.okhttp3:okhttp-urlconnection:5.4.0")
     implementation("com.squareup.okhttp3:okhttp:5.4.0")

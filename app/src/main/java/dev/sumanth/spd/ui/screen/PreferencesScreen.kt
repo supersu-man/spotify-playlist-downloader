@@ -34,46 +34,22 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.sumanth.spd.ui.viewmodel.HomeScreenViewModel
+import dev.sumanth.spd.ui.viewmodel.PreferencesScreenViewModel
 import dev.sumanth.spd.utils.SharedPref
 
 @Composable
-fun PreferencesScreen() {
-    val context = LocalContext.current
-    val sharedPref = remember { SharedPref(context) }
-    var downloadPath by remember { mutableStateOf(sharedPref.getDownloadPath()) }
-    var autoUpdateCheck by remember { mutableStateOf(sharedPref.getAutoUpdateCheck()) }
+fun PreferencesScreen(viewModel: PreferencesScreenViewModel = viewModel()) {
 
     val uriHandler = LocalUriHandler.current
-    val githubUrl = "https://github.com/supersu-man/spotify-playlist-downloader"
 
-    val version = remember {
-        try {
-            val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
-            "Version ${packageInfo.versionName}"
-        } catch (e: Exception) {
-            "Version N/A"
-        }
+    val launcher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocumentTree()
+    ) { uri ->
+        viewModel.handleFolderSelection(uri)
     }
 
-    val launcher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri ->
-        uri?.let {
-            val takeFlags: Int = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
-            context.contentResolver.takePersistableUriPermission(it, takeFlags)
-
-            val segments = uri.path?.split(":")
-            if (segments != null && segments.size > 1) {
-                val folderPath = segments[1]
-                val storageBase = if (uri.path?.contains("primary") == true) {
-                    Environment.getExternalStorageDirectory().path
-                } else {
-                    "/storage/${segments[0].split("/").last()}"
-                }
-
-                downloadPath = "$storageBase/$folderPath"
-                sharedPref.storeDownloadPath(downloadPath)
-            }
-        }
-    }
 
     Column(
         modifier = Modifier.padding(16.dp).fillMaxSize(),
@@ -91,7 +67,7 @@ fun PreferencesScreen() {
             ) {
                 Text("Download Location", style = MaterialTheme.typography.labelLarge)
                 Text(
-                    text = downloadPath,
+                    text = viewModel.getDisplayPath(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -114,10 +90,10 @@ fun PreferencesScreen() {
             ) {
                 Text("Auto-check for updates", style = MaterialTheme.typography.bodyLarge)
                 Switch(
-                    checked = autoUpdateCheck,
+                    checked = viewModel.autoUpdateCheck,
                     onCheckedChange = {
-                        autoUpdateCheck = it
-                        sharedPref.storeAutoUpdateCheck(it)
+                        viewModel.autoUpdateCheck = it
+                        viewModel.sharedPref.storeAutoUpdateCheck(it)
                     }
                 )
             }
@@ -135,7 +111,7 @@ fun PreferencesScreen() {
                     Text("Developed by Sumanth", style = MaterialTheme.typography.bodyLarge)
                 }
                 Row(
-                    modifier = Modifier.clickable { uriHandler.openUri(githubUrl) },
+                    modifier = Modifier.clickable { viewModel.openGitHub(uriHandler) },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -153,7 +129,7 @@ fun PreferencesScreen() {
                     )
                 }
                 Text(
-                    text = version,
+                    text = "Version " + viewModel.packageInfo.versionName,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

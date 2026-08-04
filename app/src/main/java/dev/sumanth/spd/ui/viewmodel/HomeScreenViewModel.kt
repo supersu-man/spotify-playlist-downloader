@@ -42,11 +42,12 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun downloadPlaylist() {
         if (tracks.isEmpty()) return Toast.makeText(getApplication(), "Playlist is empty.", Toast.LENGTH_SHORT).show()
+        val downloadPath = sharedPref.getDownloadPath()
+        if (downloadPath == null) return Toast.makeText(getApplication(), "Please select a download folder in Settings.", Toast.LENGTH_SHORT).show()
+
         downloadJob = viewModelScope.launch {
             appStatus = AppStatus.DOWNLOADING
             try {
-                val downloadPath = sharedPref.getDownloadPath()
-
                 tracks.forEachIndexed { i, track ->
                     if (track.status == DownloadStatus.COMPLETE) return@forEachIndexed
                     
@@ -56,21 +57,23 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
                         val fileMeta = withContext(Dispatchers.IO) {
                             DownloadManager.getFileMeta(track.title, track.artist)
                         }
-                        val path = "$downloadPath/${sanitizeFilename(track.title)}"
+                        
                         withContext(Dispatchers.IO) {
-                            DownloadManager.downloadFile(fileMeta.url, "$path.${fileMeta.extention}")
-                            if (convertToMp3) {
-                                DownloadManager.convertToMp3(path, fileMeta.extention, track.title, track.artist)
-                            } else {
-                                DownloadManager.tagFile(path, fileMeta.extention, track.title, track.artist)
-                            }
+                            DownloadManager.downloadFile(
+                                getApplication(),
+                                fileMeta.url,
+                                downloadPath,
+                                sanitizeFilename(track.title),
+                                fileMeta.extention,
+                                convertToMp3,
+                                track.artist
+                            )
                         }
                         tracks[i] = track.copy(status = DownloadStatus.COMPLETE)
                     } catch (e: Exception) {
                         e.printStackTrace()
                         tracks[i] = track.copy(status = DownloadStatus.FAILED)
                     }
-
                 }
                 appStatus = AppStatus.DOWNLOADING_COMPLETE
                 currentTrack = -1
