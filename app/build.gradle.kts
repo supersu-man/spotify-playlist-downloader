@@ -49,13 +49,8 @@ dependencies {
     implementation("androidx.navigation:navigation-compose:2.9.8")
     implementation("androidx.documentfile:documentfile:1.0.1")
 
-    implementation("com.squareup.okhttp3:okhttp-urlconnection:5.4.0")
     implementation("com.squareup.okhttp3:okhttp:5.4.0")
-
     implementation("com.github.teamnewpipe:NewPipeExtractor:v0.26.4")
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs_nio:2.1.5")
     implementation("com.github.supersu-man:apkupdater-library:v2.2.0")
-
-    implementation("com.arthenica:smart-exception-java:0.2.1")
     implementation(fileTree(mapOf("dir" to "libs", "include" to listOf("*.aar"))))
 }
