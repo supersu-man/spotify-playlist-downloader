@@ -43,13 +43,12 @@
 
 ## 🛠️ Tech Stack
 
-| Component | Library/Service |
-| :--- | :--- |
-| **Language** | Kotlin / Jetpack Compose |
+| Component | Library/Service                                                      |
+| :--- |:---------------------------------------------------------------------|
+| **Language** | Kotlin / Jetpack Compose                                             |
 | **Extraction** | [NewPipe Extractor](https://github.com/TeamNewPipe/NewPipeExtractor) |
-| **Metadata** | [Spotify Web API Java](https://github.com/thelinmichael/spotify-web-api-java) |
-| **Processing** | [FFmpeg Kit](https://github.com/arthenica/ffmpeg-kit) |
-| **Networking** | [OkHttp 4](https://square.github.io/okhttp/) |
+| **Processing** | [FFmpeg Kit](https://github.com/arthenica/ffmpeg-kit)                |
+| **Networking** | [OkHttp](https://github.com/lysine-dev/okhttp)                       |
 
 ## 🤝 Contributing
 
