@@ -70,7 +70,7 @@ class DownloadService : Service() {
                 DownloadState.currentTrackIndex = i
                 DownloadState.tracks[i] = track.copy(status = DownloadStatus.DOWNLOADING)
                 
-                updateNotification("Downloading: ${track.title}")
+                updateNotification(i + 1, DownloadState.tracks.size, track.title)
 
                 try {
                     val fileMeta = DownloadManager.getFileMeta(track.title, track.artist)
@@ -119,24 +119,30 @@ class DownloadService : Service() {
         }
     }
 
-    private fun createNotification(content: String): android.app.Notification {
+    private fun createNotification(content: String, progress: Int = 0, total: Int = 0): android.app.Notification {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
             PendingIntent.FLAG_IMMUTABLE
         )
 
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("Spotify Downloader")
             .setContentText(content)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
-            .build()
+
+        if (total > 0) {
+            builder.setProgress(total, progress, false)
+        }
+
+        return builder.build()
     }
 
-    private fun updateNotification(content: String) {
+    private fun updateNotification(current: Int, total: Int, trackName: String) {
+        val content = "Downloading ($current/$total): $trackName"
         val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, createNotification(content))
+        manager.notify(NOTIFICATION_ID, createNotification(content, current, total))
     }
 }
