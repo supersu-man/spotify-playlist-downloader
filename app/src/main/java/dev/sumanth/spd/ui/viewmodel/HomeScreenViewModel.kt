@@ -4,17 +4,24 @@ import android.app.Application
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import dev.sumanth.spd.model.AppStatus
 import dev.sumanth.spd.service.DownloadService
 import dev.sumanth.spd.service.DownloadState
 import dev.sumanth.spd.utils.SharedPref
+import dev.sumanth.spd.utils.SpotifyScraper
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HomeScreenViewModel(application: Application) : AndroidViewModel(application) {
 
     private val sharedPref = SharedPref(application)
+    private val spotifyScraper = SpotifyScraper()
     
     var appStatus: AppStatus
         get() = DownloadState.appStatus
@@ -22,6 +29,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
         
     var spotifyLink by mutableStateOf("")
     var convertToMp3 by mutableStateOf(false)
+    var totalTracksToScrape by mutableIntStateOf(0)
     
     var currentTrack: Int
         get() = DownloadState.currentTrackIndex
@@ -32,7 +40,34 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
     fun startScraping() {
         if (spotifyLink.isBlank()) return Toast.makeText(getApplication(), "Spotify link is invalid.", Toast.LENGTH_SHORT).show()
         if(spotifyLink.contains("?")) spotifyLink = spotifyLink.split("?")[0]
+        
         appStatus = AppStatus.SCRAPING
+        tracks.clear()
+        totalTracksToScrape = 0
+        
+        viewModelScope.launch {
+            try {
+                val scrapeResult = withContext(Dispatchers.IO) {
+                    spotifyScraper.scrapePlaylist(spotifyLink) { fetchedTracks, total ->
+                        viewModelScope.launch {
+                            totalTracksToScrape = total
+                            tracks.clear()
+                            tracks.addAll(fetchedTracks)
+                        }
+                    }
+                }
+                totalTracksToScrape = scrapeResult.totalTracks
+                tracks.clear()
+                tracks.addAll(scrapeResult.tracks)
+                appStatus = AppStatus.SCRAPING_COMPLETE
+            } catch (e: Exception) {
+                e.printStackTrace()
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(getApplication(), "Scraping failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    appStatus = AppStatus.IDLE
+                }
+            }
+        }
     }
 
     fun downloadPlaylist() {

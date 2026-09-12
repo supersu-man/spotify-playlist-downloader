@@ -43,6 +43,7 @@ import dev.sumanth.spd.ui.viewmodel.HomeScreenViewModel
 @Composable
 fun Queue(viewModel: HomeScreenViewModel) {
     val listState = rememberLazyListState()
+    val isScraping = viewModel.appStatus == AppStatus.SCRAPING
 
     LaunchedEffect(viewModel.currentTrack) {
         if (viewModel.currentTrack >= 0) {
@@ -57,24 +58,50 @@ fun Queue(viewModel: HomeScreenViewModel) {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val title = if (isScraping) {
+                    if (viewModel.totalTracksToScrape > 0) "Scraping (${viewModel.tracks.size}/${viewModel.totalTracksToScrape})"
+                    else "Scraping..."
+                } else {
+                    "Queue (${viewModel.tracks.size})"
+                }
                 Text(
-                    text = "Queue (${viewModel.tracks.size})",
+                    text = title,
                     style = MaterialTheme.typography.titleLarge
                 )
                 
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Column(horizontalAlignment = Alignment.End) {
-                        Text(
-                            text = "Downloaded: ${viewModel.getDownloadedCount()}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                        Text(
-                            text = "Failed: ${viewModel.getFailedDownloadsCount()}",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.error
-                        )
+                if (!isScraping) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Column(horizontalAlignment = Alignment.End) {
+                            Text(
+                                text = "Downloaded: ${viewModel.getDownloadedCount()}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = "Failed: ${viewModel.getFailedDownloadsCount()}",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
                     }
+                }
+            }
+
+            if (isScraping) {
+                Spacer(modifier = Modifier.height(8.dp))
+                if (viewModel.totalTracksToScrape > 0) {
+                    LinearProgressIndicator(
+                        progress = { viewModel.tracks.size.toFloat() / viewModel.totalTracksToScrape },
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
+                } else {
+                    LinearProgressIndicator(
+                        modifier = Modifier.fillMaxWidth(),
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                    )
                 }
             }
 
@@ -95,6 +122,7 @@ fun Queue(viewModel: HomeScreenViewModel) {
             val isDownloading = viewModel.appStatus == AppStatus.DOWNLOADING
             val isDownloadComplete = viewModel.appStatus == AppStatus.DOWNLOADING_COMPLETE
             val buttonText = when {
+                isScraping -> "Scraping Playlist..."
                 isDownloading -> "Cancel Download"
                 isDownloadComplete && failedCount > 0 -> "Download Failed Tracks ($failedCount)"
                 isDownloadComplete -> "Download Another Playlist"
@@ -105,13 +133,13 @@ fun Queue(viewModel: HomeScreenViewModel) {
                 onClick = { 
                     if (isDownloading) viewModel.cancelDownload()
                     else if (isDownloadComplete && failedCount == 0) viewModel.reset()
-                    else viewModel.downloadPlaylist()
+                    else if (!isScraping) viewModel.downloadPlaylist()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 16.dp)
                     .height(56.dp),
-                enabled = viewModel.tracks.isNotEmpty(),
+                enabled = viewModel.tracks.isNotEmpty() && !isScraping,
                 colors = if (isDownloading) {
                     ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -123,7 +151,7 @@ fun Queue(viewModel: HomeScreenViewModel) {
             ) {
                 if (isDownloading) {
                     Icon(Icons.Default.Close, contentDescription = null)
-                } else {
+                } else if (!isScraping) {
                     Icon(Icons.Default.Download, contentDescription = null)
                 }
                 Text(buttonText, modifier = Modifier.padding(start = 8.dp))
@@ -145,7 +173,7 @@ fun TrackItem(index: Int, track: Track) {
             text = "$index.",
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(32.dp)
+            modifier = Modifier.width(34.dp)
         )
 
         Column(modifier = Modifier.weight(1f)) {

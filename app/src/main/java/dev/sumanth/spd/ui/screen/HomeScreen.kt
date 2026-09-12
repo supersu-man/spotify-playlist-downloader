@@ -10,7 +10,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.sumanth.spd.model.AppStatus
 import dev.sumanth.spd.ui.component.Idle
 import dev.sumanth.spd.ui.component.Queue
-import dev.sumanth.spd.ui.component.SpotifyDialog
 import dev.sumanth.spd.ui.viewmodel.HomeScreenViewModel
 
 @Composable
@@ -19,9 +18,6 @@ fun HomeScreen(viewModel: HomeScreenViewModel = viewModel()) {
         when (viewModel.appStatus) {
             AppStatus.IDLE -> {
                 Idle(viewModel)
-            }
-            AppStatus.SCRAPING -> {
-                SpotifyDialog(viewModel)
             }
             else -> {
                 Queue(viewModel)
