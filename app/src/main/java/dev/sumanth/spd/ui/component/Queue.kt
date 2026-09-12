@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Download
@@ -27,6 +28,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -121,40 +123,59 @@ fun Queue(viewModel: HomeScreenViewModel) {
             val failedCount = viewModel.getFailedDownloadsCount()
             val isDownloading = viewModel.appStatus == AppStatus.DOWNLOADING
             val isDownloadComplete = viewModel.appStatus == AppStatus.DOWNLOADING_COMPLETE
-            val buttonText = when {
-                isScraping -> "Scraping Playlist..."
-                isDownloading -> "Cancel Download"
-                isDownloadComplete && failedCount > 0 -> "Download Failed Tracks ($failedCount)"
-                isDownloadComplete -> "Download Another Playlist"
-                else -> "Download All"
-            }
+            val isScrapingComplete = viewModel.appStatus == AppStatus.SCRAPING_COMPLETE
 
-            Button(
-                onClick = { 
-                    if (isDownloading) viewModel.cancelDownload()
-                    else if (isDownloadComplete && failedCount == 0) viewModel.reset()
-                    else if (!isScraping) viewModel.downloadPlaylist()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp)
-                    .height(56.dp),
-                enabled = viewModel.tracks.isNotEmpty() && !isScraping,
-                colors = if (isDownloading) {
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                } else {
-                    ButtonDefaults.buttonColors()
-                }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (isDownloading) {
-                    Icon(Icons.Default.Close, contentDescription = null)
-                } else if (!isScraping) {
-                    Icon(Icons.Default.Download, contentDescription = null)
+                if (isScrapingComplete || isDownloadComplete) {
+                    OutlinedButton(
+                        onClick = { viewModel.reset() },
+                        modifier = Modifier.weight(1f).height(56.dp)
+                    ) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
+                        Text("Back", modifier = Modifier.padding(start = 8.dp))
+                    }
                 }
-                Text(buttonText, modifier = Modifier.padding(start = 8.dp))
+
+                Button(
+                    onClick = {
+                        when {
+                            isScraping -> viewModel.cancelScraping()
+                            isDownloading -> viewModel.cancelDownload()
+                            isDownloadComplete && failedCount > 0 -> viewModel.downloadPlaylist()
+                            isDownloadComplete -> viewModel.reset()
+                            else -> viewModel.downloadPlaylist()
+                        }
+                    },
+                    modifier = Modifier
+                        .weight(if (isScrapingComplete || isDownloadComplete) 2f else 1f)
+                        .height(56.dp),
+                    enabled = (isScraping || viewModel.tracks.isNotEmpty()),
+                    colors = if (isDownloading || isScraping) {
+                        ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    } else {
+                        ButtonDefaults.buttonColors()
+                    }
+                ) {
+                    val icon = when {
+                        isScraping || isDownloading -> Icons.Default.Close
+                        else -> Icons.Default.Download
+                    }
+                    val text = when {
+                        isScraping -> "Cancel Scraping"
+                        isDownloading -> "Cancel Download"
+                        isDownloadComplete && failedCount > 0 -> "Retry Failed ($failedCount)"
+                        isDownloadComplete -> "Download Another"
+                        else -> "Download All"
+                    }
+                    Icon(icon, contentDescription = null)
+                    Text(text, modifier = Modifier.padding(start = 8.dp))
+                }
             }
         }
     }

@@ -14,7 +14,9 @@ import dev.sumanth.spd.service.DownloadService
 import dev.sumanth.spd.service.DownloadState
 import dev.sumanth.spd.utils.SharedPref
 import dev.sumanth.spd.utils.SpotifyScraper
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -22,6 +24,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     private val sharedPref = SharedPref(application)
     private val spotifyScraper = SpotifyScraper()
+    private var scrapingJob: Job? = null
     
     var appStatus: AppStatus
         get() = DownloadState.appStatus
@@ -45,7 +48,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
         tracks.clear()
         totalTracksToScrape = 0
         
-        viewModelScope.launch {
+        scrapingJob = viewModelScope.launch {
             try {
                 val scrapeResult = withContext(Dispatchers.IO) {
                     spotifyScraper.scrapePlaylist(spotifyLink) { fetchedTracks, total ->
@@ -61,6 +64,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
                 tracks.addAll(scrapeResult.tracks)
                 appStatus = AppStatus.SCRAPING_COMPLETE
             } catch (e: Exception) {
+                if (e is CancellationException) return@launch
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
                     Toast.makeText(getApplication(), "Scraping failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -89,6 +93,12 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
             action = DownloadService.ACTION_STOP
         }
         getApplication<Application>().startService(intent)
+    }
+
+    fun cancelScraping() {
+        scrapingJob?.cancel()
+        appStatus = AppStatus.IDLE
+        tracks.clear()
     }
 
     fun reset() {
