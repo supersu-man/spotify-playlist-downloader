@@ -17,6 +17,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.CancellationException
+import com.arthenica.ffmpegkit.FFmpegKit
 
 class DownloadService : Service() {
 
@@ -37,6 +42,12 @@ class DownloadService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        serviceScope.cancel()
+        FFmpegKit.cancel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -64,8 +75,9 @@ class DownloadService : Service() {
         downloadJob?.cancel()
         downloadJob = serviceScope.launch {
             DownloadState.appStatus = AppStatus.DOWNLOADING
-            DownloadState.tracks.forEachIndexed { i, track ->
-                if (track.status == DownloadStatus.COMPLETE) return@forEachIndexed
+            for ((i, track) in DownloadState.tracks.withIndex()) {
+                ensureActive()
+                if (track.status == DownloadStatus.COMPLETE) continue
 
                 DownloadState.currentTrackIndex = i
                 DownloadState.tracks[i] = track.copy(status = DownloadStatus.DOWNLOADING)
@@ -85,6 +97,7 @@ class DownloadService : Service() {
                     )
                     DownloadState.tracks[i] = track.copy(status = DownloadStatus.COMPLETE)
                 } catch (e: Exception) {
+                    if (e is CancellationException) throw e
                     e.printStackTrace()
                     DownloadState.tracks[i] = track.copy(status = DownloadStatus.FAILED)
                 }
@@ -98,6 +111,7 @@ class DownloadService : Service() {
 
     private fun stopDownloads() {
         downloadJob?.cancel()
+        FFmpegKit.cancel()
         DownloadState.appStatus = AppStatus.SCRAPING_COMPLETE
         stopForeground(true)
         stopSelf()
@@ -119,7 +133,7 @@ class DownloadService : Service() {
         }
     }
 
-    private fun createNotification(content: String, progress: Int = 0, total: Int = 0): android.app.Notification {
+    private fun createNotification(title: String, content: String = "", progress: Int = 0, total: Int = 0): android.app.Notification {
         val intent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this, 0, intent,
@@ -127,11 +141,11 @@ class DownloadService : Service() {
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Spotify Downloader")
-            .setContentText(content)
+            .setContentTitle(title)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
+            .apply { if (content.isNotEmpty()) setContentText(content) }
 
         if (total > 0) {
             builder.setProgress(total, progress, false)
@@ -141,8 +155,8 @@ class DownloadService : Service() {
     }
 
     private fun updateNotification(current: Int, total: Int, trackName: String) {
-        val content = "Downloading ($current/$total): $trackName"
+        val title = "Downloading ($current/$total)"
         val manager = getSystemService(NotificationManager::class.java)
-        manager.notify(NOTIFICATION_ID, createNotification(content, current, total))
+        manager.notify(NOTIFICATION_ID, createNotification(title, trackName, current, total))
     }
 }

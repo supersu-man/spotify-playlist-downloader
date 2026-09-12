@@ -21,6 +21,9 @@ import java.io.FileOutputStream
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import androidx.core.net.toUri
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.CancellationException
 
 data class FileMeta(val url: String, val name: String, val extention: String)
 
@@ -54,7 +57,7 @@ object DownloadManager {
         return FileMeta(url = bestStream.content, name = extractor.name, extention = "m4a")
     }
 
-    fun downloadFile(
+    suspend fun downloadFile(
         context: Context,
         url: String,
         folderUriString: String,
@@ -77,7 +80,14 @@ object DownloadManager {
             
             body.byteStream().use { input ->
                 FileOutputStream(tempFile).use { output ->
-                    input.copyTo(output)
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    while (input.read(buffer).also { bytesRead = it } != -1) {
+                        if (!currentCoroutineContext().isActive) {
+                            throw CancellationException("Download cancelled")
+                        }
+                        output.write(buffer, 0, bytesRead)
+                    }
                 }
             }
         }
