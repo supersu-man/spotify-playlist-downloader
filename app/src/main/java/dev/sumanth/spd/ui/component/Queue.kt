@@ -129,13 +129,12 @@ fun Queue(viewModel: HomeScreenViewModel) {
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                if (isScrapingComplete || isDownloadComplete) {
+                if (isScrapingComplete) {
                     OutlinedButton(
                         onClick = { viewModel.reset() },
-                        modifier = Modifier.weight(1f).height(56.dp)
+                        modifier = Modifier.height(56.dp)
                     ) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null)
-                        Text("Back", modifier = Modifier.padding(start = 8.dp))
                     }
                 }
 
@@ -150,7 +149,7 @@ fun Queue(viewModel: HomeScreenViewModel) {
                         }
                     },
                     modifier = Modifier
-                        .weight(if (isScrapingComplete || isDownloadComplete) 2f else 1f)
+                        .weight(1f)
                         .height(56.dp),
                     enabled = (isScraping || viewModel.tracks.isNotEmpty()),
                     colors = if (isDownloading || isScraping) {
