@@ -411,7 +411,14 @@ class SpotifyScraper(private val client: OkHttpClient = OkHttpClient()) {
                     }
                     
                     if (name.isNotEmpty()) {
-                        tracks.add(Track(name, artistsText.joinToString(", "), DownloadStatus.IDLE))
+                        val album = trackData.optJSONObject("albumOfTrack") ?: trackData.optJSONObject("album")
+                        val coverArt = album?.optJSONObject("coverArt")
+                        val sources = coverArt?.optJSONArray("sources")
+                        val imageUrl = if (sources != null && sources.length() > 0) {
+                            sources.getJSONObject(sources.length() - 1).optString("url")
+                        } else null
+
+                        tracks.add(Track(name, artistsText.joinToString(", "), DownloadStatus.IDLE, imageUrl))
                     }
                 }
                 

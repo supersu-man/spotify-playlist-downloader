@@ -93,7 +93,8 @@ class DownloadService : Service() {
                         sanitizeFilename(track.title),
                         fileMeta.extention,
                         convertToMp3,
-                        track.artist
+                        track.artist,
+                        track.imageUrl
                     )
                     DownloadState.tracks[i] = track.copy(status = DownloadStatus.COMPLETE)
                 } catch (e: Exception) {

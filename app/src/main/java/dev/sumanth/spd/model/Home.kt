@@ -18,5 +18,6 @@ enum class DownloadStatus {
 data class Track(
     val title: String,
     val artist: String,
-    val status: DownloadStatus
+    val status: DownloadStatus,
+    val imageUrl: String? = null
 )

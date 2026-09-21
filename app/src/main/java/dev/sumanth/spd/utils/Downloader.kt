@@ -64,7 +64,8 @@ object DownloadManager {
         fileName: String,
         extension: String,
         convertToMp3: Boolean,
-        artist: String
+        artist: String,
+        imageUrl: String? = null
     ) {
         val request = okhttp3.Request.Builder()
             .url(url)
@@ -92,10 +93,12 @@ object DownloadManager {
             }
         }
 
+        val thumbFile = imageUrl?.let { downloadThumbnail(it) }
+
         val processedFile = if (convertToMp3) {
-            convertToMp3(tempFile, fileName, artist)
+            convertToMp3(tempFile, fileName, artist, thumbFile)
         } else {
-            tagFile(tempFile, extension, fileName, artist)
+            tagFile(tempFile, extension, fileName, artist, thumbFile)
         }
 
         // Copy to SAF
@@ -116,17 +119,23 @@ object DownloadManager {
         
         processedFile.delete()
         if (processedFile != tempFile) tempFile.delete()
+        thumbFile?.delete()
     }
 
-    private fun tagFile(file: File, ext: String, trackName: String, artist: String): File {
+    private fun tagFile(file: File, ext: String, trackName: String, artist: String, thumbFile: File? = null): File {
         val inputPath = file.absolutePath
         val tempFile = File(file.parent, "${file.nameWithoutExtension}.tmp.$ext")
         val tempPath = tempFile.absolutePath
 
         val command = StringBuilder("-i \"$inputPath\" ")
+        if (thumbFile != null) {
+            command.append("-i \"${thumbFile.absolutePath}\" ")
+            command.append("-map 0 -map 1 -c copy -disposition:v:0 attached_pic ")
+        } else {
+            command.append("-codec copy ")
+        }
         command.append("-metadata title=\"$trackName\" ")
         command.append("-metadata artist=\"$artist\" ")
-        command.append("-codec copy ")
         command.append("-y \"$tempPath\"")
 
         FFmpegKitConfig.setLogLevel(Level.AV_LOG_QUIET)
@@ -140,13 +149,17 @@ object DownloadManager {
         }
     }
 
-    private fun convertToMp3(file: File, trackName: String, artist: String): File {
+    private fun convertToMp3(file: File, trackName: String, artist: String, thumbFile: File? = null): File {
         val inputPath = file.absolutePath
         val outputPath = File(file.parent, "${file.nameWithoutExtension}.mp3").absolutePath
 
         val command = StringBuilder("-i \"$inputPath\" ")
-        command.append("-map 0:a ")
-        command.append("-c:a libmp3lame -ab 192k -ar 44100 ")
+        if (thumbFile != null) {
+            command.append("-i \"${thumbFile.absolutePath}\" ")
+            command.append("-map 0:a -map 1:0 -c:a libmp3lame -ab 192k -ar 44100 -id3v2_version 3 -metadata:s:v title=\"Album cover\" -metadata:s:v comment=\"Cover (Front)\" ")
+        } else {
+            command.append("-map 0:a -c:a libmp3lame -ab 192k -ar 44100 ")
+        }
         command.append("-metadata title=\"$trackName\" ")
         command.append("-metadata artist=\"$artist\" ")
         command.append("-y \"$outputPath\"")
