@@ -1,6 +1,7 @@
 package dev.sumanth.spd
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -31,6 +32,7 @@ import dev.sumanth.spd.ui.component.TopBar
 import dev.sumanth.spd.ui.component.UpdateDialog
 import dev.sumanth.spd.ui.screen.HomeScreen
 import dev.sumanth.spd.ui.screen.PreferencesScreen
+import dev.sumanth.spd.ui.viewmodel.HomeScreenViewModel
 import dev.sumanth.spd.ui.viewmodel.UpdaterViewModel
 import dev.sumanth.spd.utils.NewPipeDownloader
 import dev.sumanth.spd.utils.SharedPref
@@ -44,6 +46,7 @@ class MainActivity : ComponentActivity() {
     )
 
     private val updateViewModel: UpdaterViewModel by viewModels()
+    private val homeScreenViewModel: HomeScreenViewModel by viewModels()
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -70,6 +73,8 @@ class MainActivity : ComponentActivity() {
 
         NewPipe.init(NewPipeDownloader.getInstance())
 
+        handleIntent(intent)
+
         setContent {
 
             val pagerState = rememberPagerState(pageCount = { navigationItems.size })
@@ -95,6 +100,27 @@ class MainActivity : ComponentActivity() {
                     }
 
                     UpdateDialog(updateViewModel)
+                }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        if (intent.action == Intent.ACTION_SEND && intent.type == "text/plain") {
+            val sharedText = intent.getStringExtra(Intent.EXTRA_TEXT)
+            if (sharedText != null) {
+                val regex = Regex("https?://[\\w\\d./?=&%-]+")
+                val match = regex.find(sharedText)
+                match?.value?.let { url ->
+                    if (url.contains("open.spotify.com") || url.contains("spotify.link")) {
+                        homeScreenViewModel.spotifyLink = url
+                        homeScreenViewModel.startScraping()
+                    }
                 }
             }
         }
