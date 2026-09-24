@@ -322,7 +322,11 @@ class SpotifyScraper(private val client: OkHttpClient = OkHttpClient()) {
             val json = JSONObject(response.body?.string() ?: "{}")
             val p = json.optJSONObject("data")?.optJSONObject("playlistV2") ?: throw Exception("Playlist not found")
 
-            val name = p.getString("name")
+            val name = try {
+                p.getString("name")
+            } catch (e: Exception) {
+                throw Exception("Playlist is private, make it public")
+            }
             val totalCount = p.optJSONObject("content")?.optInt("totalCount") ?: 0
             val ownerName = p.optJSONObject("ownerV2")?.optJSONObject("data")?.optString("name")
             val followers = p.optInt("followers", 0)
