@@ -1,5 +1,6 @@
 package dev.sumanth.spd.ui.component
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,6 +24,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -30,10 +32,12 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TriStateCheckbox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +50,11 @@ import dev.sumanth.spd.ui.viewmodel.HomeScreenViewModel
 fun Queue(viewModel: HomeScreenViewModel) {
     val listState = rememberLazyListState()
     val isScraping = viewModel.appStatus == AppStatus.SCRAPING
+    val isDownloading = viewModel.appStatus == AppStatus.DOWNLOADING
+    val isDownloadComplete = viewModel.appStatus == AppStatus.DOWNLOADING_COMPLETE
+    val isScrapingComplete = viewModel.appStatus == AppStatus.SCRAPING_COMPLETE
+    val failedCount = viewModel.getFailedDownloadsCount()
+    val selectedCount = viewModel.getSelectedTracksCount()
 
     LaunchedEffect(viewModel.currentTrack) {
         if (viewModel.currentTrack >= 0) {
@@ -107,23 +116,61 @@ fun Queue(viewModel: HomeScreenViewModel) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (!isScraping && viewModel.tracks.isNotEmpty()) {
+                val allSelected = viewModel.tracks.all { it.isSelected }
+                val totalCount = viewModel.tracks.size
+                val toggleState = when {
+                    allSelected -> ToggleableState.On
+                    viewModel.tracks.none { it.isSelected } -> ToggleableState.Off
+                    else -> ToggleableState.Indeterminate
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(enabled = !isDownloading) {
+                            viewModel.selectAllTracks(toggleState != ToggleableState.On)
+                        }
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    TriStateCheckbox(
+                        state = toggleState,
+                        onClick = {
+                            viewModel.selectAllTracks(toggleState != ToggleableState.On)
+                        },
+                        enabled = !isDownloading
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Select All ($selectedCount/$totalCount)",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                HorizontalDivider(modifier = Modifier.padding(bottom = 4.dp), thickness = 0.5.dp)
+            }
+
             LazyColumn(
                 modifier = Modifier.weight(1f),
                 state = listState,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 itemsIndexed(viewModel.tracks) { index, track ->
-                    TrackItem(index + 1, track)
+                    TrackItem(
+                        index = index + 1,
+                        track = track,
+                        onSelectionChange = {
+                            viewModel.toggleTrackSelection(index)
+                        },
+                        enabled = !isDownloading
+                    )
                     HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp), thickness = 0.5.dp)
                 }
             }
-
-            val failedCount = viewModel.getFailedDownloadsCount()
-            val isDownloading = viewModel.appStatus == AppStatus.DOWNLOADING
-            val isDownloadComplete = viewModel.appStatus == AppStatus.DOWNLOADING_COMPLETE
-            val isScrapingComplete = viewModel.appStatus == AppStatus.SCRAPING_COMPLETE
 
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
@@ -151,7 +198,7 @@ fun Queue(viewModel: HomeScreenViewModel) {
                     modifier = Modifier
                         .weight(1f)
                         .height(56.dp),
-                    enabled = (isScraping || viewModel.tracks.isNotEmpty()),
+                    enabled = (isScraping || (viewModel.tracks.isNotEmpty() && selectedCount > 0)),
                     colors = if (isDownloading || isScraping) {
                         ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.errorContainer,
@@ -170,7 +217,8 @@ fun Queue(viewModel: HomeScreenViewModel) {
                         isDownloading -> "Cancel Download"
                         isDownloadComplete && failedCount > 0 -> "Retry Failed ($failedCount)"
                         isDownloadComplete -> "Download Another"
-                        else -> "Download All"
+                        selectedCount == viewModel.tracks.size -> "Download All"
+                        else -> "Download Selected ($selectedCount)"
                     }
                     Icon(icon, contentDescription = null)
                     Text(text, modifier = Modifier.padding(start = 8.dp))
@@ -181,19 +229,33 @@ fun Queue(viewModel: HomeScreenViewModel) {
 }
 
 @Composable
-fun TrackItem(index: Int, track: Track) {
+fun TrackItem(
+    index: Int,
+    track: Track,
+    onSelectionChange: (Boolean) -> Unit,
+    enabled: Boolean = true
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
+            .clickable(enabled = enabled) {
+                onSelectionChange(!track.isSelected)
+            }
+            .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
+        Checkbox(
+            checked = track.isSelected,
+            onCheckedChange = { onSelectionChange(it) },
+            enabled = enabled
+        )
+
         Text(
             text = "$index.",
-            style = MaterialTheme.typography.bodyLarge,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(34.dp)
+            modifier = Modifier.width(28.dp)
         )
 
         Column(modifier = Modifier.weight(1f)) {

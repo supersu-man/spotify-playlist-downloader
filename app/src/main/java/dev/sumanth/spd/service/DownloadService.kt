@@ -75,14 +75,20 @@ class DownloadService : Service() {
         downloadJob?.cancel()
         downloadJob = serviceScope.launch {
             DownloadState.appStatus = AppStatus.DOWNLOADING
+            val selectedTracks = DownloadState.tracks.filter { it.isSelected && it.status != DownloadStatus.COMPLETE }
+            var processedCount = 0
+            val totalToDownload = selectedTracks.size
+
             for ((i, track) in DownloadState.tracks.withIndex()) {
                 ensureActive()
+                if (!track.isSelected) continue
                 if (track.status == DownloadStatus.COMPLETE) continue
 
+                processedCount++
                 DownloadState.currentTrackIndex = i
                 DownloadState.tracks[i] = track.copy(status = DownloadStatus.DOWNLOADING)
                 
-                updateNotification(i + 1, DownloadState.tracks.size, track.title)
+                updateNotification(processedCount, totalToDownload, track.title)
 
                 try {
                     val fileMeta = DownloadManager.getFileMeta(track.title, track.artist)

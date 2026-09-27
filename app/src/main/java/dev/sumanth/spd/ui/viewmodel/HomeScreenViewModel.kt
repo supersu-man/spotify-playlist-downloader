@@ -76,6 +76,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
 
     fun downloadPlaylist() {
         if (tracks.isEmpty()) return Toast.makeText(getApplication(), "Playlist is empty.", Toast.LENGTH_SHORT).show()
+        if (tracks.none { it.isSelected }) return Toast.makeText(getApplication(), "No tracks selected.", Toast.LENGTH_SHORT).show()
         val downloadPath = sharedPref.getDownloadPath()
         if (downloadPath == null) return Toast.makeText(getApplication(), "Please select a download folder in Settings.", Toast.LENGTH_SHORT).show()
 
@@ -86,6 +87,19 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
         }
         
         getApplication<Application>().startService(intent)
+    }
+
+    fun toggleTrackSelection(index: Int) {
+        if (index in tracks.indices) {
+            val track = tracks[index]
+            tracks[index] = track.copy(isSelected = !track.isSelected)
+        }
+    }
+
+    fun selectAllTracks(selected: Boolean) {
+        for (i in tracks.indices) {
+            tracks[i] = tracks[i].copy(isSelected = selected)
+        }
     }
 
     fun cancelDownload() {
@@ -110,4 +124,5 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
     
     fun getFailedDownloadsCount(): Int = tracks.count { it.status == dev.sumanth.spd.model.DownloadStatus.FAILED }
     fun getDownloadedCount(): Int = tracks.count { it.status == dev.sumanth.spd.model.DownloadStatus.COMPLETE }
+    fun getSelectedTracksCount(): Int = tracks.count { it.isSelected }
 }
