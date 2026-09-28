@@ -345,7 +345,7 @@ class SpotifyScraper(private val client: OkHttpClient = OkHttpClient()) {
         }
     }
 
-    fun scrapePlaylist(playlistUrlOrId: String, onProgress: (List<Track>, Int) -> Unit): ScrapeResult {
+    suspend fun scrapePlaylist(playlistUrlOrId: String, onProgress: suspend (List<Track>, Int) -> Unit): ScrapeResult {
         val playlistId = parsePlaylistId(playlistUrlOrId)
         val metadata = getPlaylistMetadata(playlistId)
         val totalCount = metadata.totalCount

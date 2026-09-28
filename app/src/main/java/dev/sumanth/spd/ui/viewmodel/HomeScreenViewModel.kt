@@ -52,7 +52,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
             try {
                 val scrapeResult = withContext(Dispatchers.IO) {
                     spotifyScraper.scrapePlaylist(spotifyLink) { fetchedTracks, total ->
-                        viewModelScope.launch {
+                        withContext(Dispatchers.Main) {
                             totalTracksToScrape = total
                             tracks.clear()
                             tracks.addAll(fetchedTracks)
