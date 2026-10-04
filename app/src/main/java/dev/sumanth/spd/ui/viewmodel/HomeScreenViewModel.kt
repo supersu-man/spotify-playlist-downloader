@@ -62,6 +62,7 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
                 totalTracksToScrape = scrapeResult.totalTracks
                 tracks.clear()
                 tracks.addAll(scrapeResult.tracks)
+                DownloadState.playlistName = scrapeResult.metadata.name
                 appStatus = AppStatus.SCRAPING_COMPLETE
             } catch (e: Exception) {
                 if (e is CancellationException) return@launch
@@ -80,10 +81,15 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
         val downloadPath = sharedPref.getDownloadPath()
         if (downloadPath == null) return Toast.makeText(getApplication(), "Please select a download folder in Settings.", Toast.LENGTH_SHORT).show()
 
+        val createSubfolder = sharedPref.getCreateSubfolder()
+        val playlistName = DownloadState.playlistName
+
         val intent = Intent(getApplication(), DownloadService::class.java).apply {
             action = DownloadService.ACTION_START
             putExtra(DownloadService.EXTRA_DOWNLOAD_PATH, downloadPath)
             putExtra(DownloadService.EXTRA_CONVERT_TO_MP3, convertToMp3)
+            putExtra(DownloadService.EXTRA_CREATE_SUBFOLDER, createSubfolder)
+            putExtra(DownloadService.EXTRA_PLAYLIST_NAME, playlistName)
         }
         
         getApplication<Application>().startService(intent)

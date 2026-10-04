@@ -79,6 +79,32 @@ fun PreferencesScreen(viewModel: PreferencesScreenViewModel = viewModel()) {
             }
         }
 
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Create subfolder per playlist", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = "Download tracks into a dedicated folder",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = viewModel.createSubfolder,
+                    onCheckedChange = {
+                        viewModel.createSubfolder = it
+                        viewModel.sharedPref.storeCreateSubfolder(it)
+                    }
+                )
+            }
+        }
+
         Text("Updates", style = MaterialTheme.typography.titleMedium)
         Card(modifier = Modifier.fillMaxWidth()) {
             Row(

@@ -65,7 +65,9 @@ object DownloadManager {
         extension: String,
         convertToMp3: Boolean,
         artist: String,
-        imageUrl: String? = null
+        imageUrl: String? = null,
+        createSubfolder: Boolean = true,
+        playlistName: String? = null
     ) {
         val request = okhttp3.Request.Builder()
             .url(url)
@@ -103,8 +105,19 @@ object DownloadManager {
 
         // Copy to SAF
         val folderUri = folderUriString.toUri()
-        val pickedDir = DocumentFile.fromTreeUri(context, folderUri)
+        var pickedDir = DocumentFile.fromTreeUri(context, folderUri)
             ?: throw IOException("Failed to get document from tree URI")
+
+        if (createSubfolder && !playlistName.isNullOrBlank()) {
+            val sanitizedPlaylistName = sanitizeFilename(playlistName)
+            var subDir = pickedDir.findFile(sanitizedPlaylistName)
+            if (subDir == null || !subDir.isDirectory) {
+                subDir = pickedDir.createDirectory(sanitizedPlaylistName)
+            }
+            if (subDir != null) {
+                pickedDir = subDir
+            }
+        }
 
         val finalExtension = if (convertToMp3) "mp3" else extension
         val newFile = pickedDir.createFile("audio/*", "$fileName.$finalExtension")
@@ -120,6 +133,10 @@ object DownloadManager {
         processedFile.delete()
         if (processedFile != tempFile) tempFile.delete()
         thumbFile?.delete()
+    }
+
+    fun sanitizeFilename(name: String): String {
+        return name.replace(Regex("[\\\\/:*?\"<>|]"), "_")
     }
 
     private fun tagFile(file: File, ext: String, trackName: String, artist: String, thumbFile: File? = null): File {

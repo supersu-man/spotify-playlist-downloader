@@ -31,9 +31,20 @@ class SharedPref(context: Context) {
         }
     }
 
+    fun getCreateSubfolder(): Boolean {
+        return sharedPref.getBoolean(KEY_CREATE_SUBFOLDER, true)
+    }
+
+    fun storeCreateSubfolder(enabled: Boolean) {
+        sharedPref.edit {
+            putBoolean(KEY_CREATE_SUBFOLDER, enabled)
+        }
+    }
+
     companion object {
         private const val PREFS_NAME = "spd_settings"
         private const val KEY_DOWNLOAD_PATH = "download_path"
         private const val KEY_AUTO_UPDATE_CHECK = "auto_update_check"
+        private const val KEY_CREATE_SUBFOLDER = "create_subfolder"
     }
 }

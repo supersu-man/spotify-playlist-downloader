@@ -11,5 +11,6 @@ import dev.sumanth.spd.model.Track
 object DownloadState {
     var appStatus by mutableStateOf(AppStatus.IDLE)
     var currentTrackIndex by mutableIntStateOf(-1)
+    var playlistName by mutableStateOf("")
     val tracks = mutableStateListOf<Track>()
 }

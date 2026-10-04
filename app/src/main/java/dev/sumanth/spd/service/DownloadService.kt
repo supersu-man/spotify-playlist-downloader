@@ -35,6 +35,8 @@ class DownloadService : Service() {
         const val ACTION_STOP = "ACTION_STOP"
         const val EXTRA_DOWNLOAD_PATH = "EXTRA_DOWNLOAD_PATH"
         const val EXTRA_CONVERT_TO_MP3 = "EXTRA_CONVERT_TO_MP3"
+        const val EXTRA_CREATE_SUBFOLDER = "EXTRA_CREATE_SUBFOLDER"
+        const val EXTRA_PLAYLIST_NAME = "EXTRA_PLAYLIST_NAME"
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -55,6 +57,8 @@ class DownloadService : Service() {
             ACTION_START -> {
                 val path = intent.getStringExtra(EXTRA_DOWNLOAD_PATH) ?: return START_NOT_STICKY
                 val convert = intent.getBooleanExtra(EXTRA_CONVERT_TO_MP3, false)
+                val createSubfolder = intent.getBooleanExtra(EXTRA_CREATE_SUBFOLDER, true)
+                val playlistName = intent.getStringExtra(EXTRA_PLAYLIST_NAME)
                 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
                     startForeground(NOTIFICATION_ID, createNotification("Preparing download..."), ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
@@ -62,7 +66,7 @@ class DownloadService : Service() {
                     startForeground(NOTIFICATION_ID, createNotification("Preparing download..."))
                 }
                 
-                startDownloads(path, convert)
+                startDownloads(path, convert, createSubfolder, playlistName)
             }
             ACTION_STOP -> {
                 stopDownloads()
@@ -71,7 +75,7 @@ class DownloadService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun startDownloads(downloadPath: String, convertToMp3: Boolean) {
+    private fun startDownloads(downloadPath: String, convertToMp3: Boolean, createSubfolder: Boolean, playlistName: String?) {
         downloadJob?.cancel()
         downloadJob = serviceScope.launch {
             DownloadState.appStatus = AppStatus.DOWNLOADING
@@ -96,11 +100,13 @@ class DownloadService : Service() {
                         this@DownloadService,
                         fileMeta.url,
                         downloadPath,
-                        sanitizeFilename(track.title),
+                        DownloadManager.sanitizeFilename(track.title),
                         fileMeta.extention,
                         convertToMp3,
                         track.artist,
-                        track.imageUrl
+                        track.imageUrl,
+                        createSubfolder,
+                        playlistName
                     )
                     DownloadState.tracks[i] = track.copy(status = DownloadStatus.COMPLETE)
                 } catch (e: Exception) {
@@ -122,10 +128,6 @@ class DownloadService : Service() {
         DownloadState.appStatus = AppStatus.SCRAPING_COMPLETE
         stopForeground(true)
         stopSelf()
-    }
-
-    private fun sanitizeFilename(name: String): String {
-        return name.replace(Regex("[\\\\/:*?\"<>|]"), "_")
     }
 
     private fun createNotificationChannel() {
