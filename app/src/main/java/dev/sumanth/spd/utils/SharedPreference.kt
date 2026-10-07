@@ -1,18 +1,34 @@
 package dev.sumanth.spd.utils
 
 import android.content.Context
+import android.net.Uri
 import androidx.core.content.edit
+import androidx.core.net.toUri
 import java.io.File
 
 class SharedPref(context: Context) {
 
-    private val sharedPref = context.applicationContext.getSharedPreferences(
+    private val context = context.applicationContext
+    private val sharedPref = this.context.getSharedPreferences(
         PREFS_NAME,
         Context.MODE_PRIVATE
     )
 
     fun getDownloadPath(): String? {
-        return sharedPref.getString(KEY_DOWNLOAD_PATH, null)
+        val path = sharedPref.getString(KEY_DOWNLOAD_PATH, null) ?: return null
+        try {
+            val uri = path.toUri()
+            val hasPermission = context.contentResolver.persistedUriPermissions.any {
+                it.uri == uri && (it.isWritePermission || it.isReadPermission)
+            }
+            if (!hasPermission) {
+                sharedPref.edit { remove(KEY_DOWNLOAD_PATH) }
+                return null
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+        return path
     }
 
     fun storeDownloadPath(path: String) {
