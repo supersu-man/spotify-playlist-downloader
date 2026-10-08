@@ -68,7 +68,12 @@ class HomeScreenViewModel(application: Application) : AndroidViewModel(applicati
                 if (e is CancellationException) return@launch
                 e.printStackTrace()
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(getApplication(), "Scraping failed: ${e.message}", Toast.LENGTH_LONG).show()
+                    val message = if (e is IllegalArgumentException && e.message != null) {
+                        e.message!!
+                    } else {
+                        "Scraping failed: ${e.message}"
+                    }
+                    Toast.makeText(getApplication(), message, Toast.LENGTH_LONG).show()
                     appStatus = AppStatus.IDLE
                 }
             }

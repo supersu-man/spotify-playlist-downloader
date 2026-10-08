@@ -65,12 +65,29 @@ class SpotifyScraper(private val client: OkHttpClient = OkHttpClient()) {
         .build()
 
     fun parsePlaylistId(input: String): String {
+        val trimmed = input.trim()
+        if (trimmed.contains("/track/") || trimmed.contains("spotify:track:")) {
+            throw IllegalArgumentException("Single track download is not supported. Please use a playlist link.")
+        }
+        if (trimmed.contains("/album/") || trimmed.contains("spotify:album:")) {
+            throw IllegalArgumentException("Album download is not supported. Please use a playlist link.")
+        }
+        if (trimmed.contains("/artist/") || trimmed.contains("spotify:artist:")) {
+            throw IllegalArgumentException("Artist download is not supported. Please use a playlist link.")
+        }
+        if (trimmed.contains("/episode/") || trimmed.contains("spotify:episode:")) {
+            throw IllegalArgumentException("Episode download is not supported. Please use a playlist link.")
+        }
+        if (trimmed.contains("/show/") || trimmed.contains("spotify:show:")) {
+            throw IllegalArgumentException("Show download is not supported. Please use a playlist link.")
+        }
+
         val regex = Regex("playlist[/:]([a-zA-Z0-9]{22})")
-        val match = regex.find(input)
+        val match = regex.find(trimmed)
         if (match != null) return match.groupValues[1]
         
         val idRegex = Regex("^[a-zA-Z0-9]{22}$")
-        if (idRegex.matches(input.trim())) return input.trim()
+        if (idRegex.matches(trimmed)) return trimmed
         
         throw IllegalArgumentException("Unable to extract Spotify playlist ID from: $input")
     }
